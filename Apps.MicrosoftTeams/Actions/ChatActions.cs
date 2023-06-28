@@ -30,7 +30,32 @@ namespace Apps.MicrosoftTeams.Actions
             };
         }
 
-        [Action("Send message to chat", Description = "Send message to chat")]
+        [Action("Get chat message", Description = "Get chat message")]
+        public async Task<MessageDto> GetChatMessage(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] GetChatMessageRequest input)
+        {
+            var client = new MSTeamsClient(authenticationCredentialsProviders);
+            var message = await client.Me.Chats[input.ChatId].Messages[input.MessageId].GetAsync();
+            return new MessageDto()
+            {
+                Id = message?.Id,
+                Content = message?.Body?.Content
+            };
+        }
+
+        [Action("Get last n messages", Description = "Get last n messages")]
+        public async Task<GetLastMessages> GetLastMessages(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] GetLastMessagesRequest input)
+        {
+            var client = new MSTeamsClient(authenticationCredentialsProviders);
+            var messages = await client.Me.Chats[input.ChatId].Messages.GetAsync();
+            return new GetLastMessages()
+            {
+                Messages = messages.Value.TakeLast(input.MessagesAmount).Select(m => new MessageDto() { Id = m.Id, Content = m.Body?.Content})
+            };
+        }
+
+        [Action("Send text message to chat", Description = "Send text message to chat")]
         public async Task<SendMessageToChatResponse> SendMessageToChat(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] SendMessageToChatRequest input)
         {
