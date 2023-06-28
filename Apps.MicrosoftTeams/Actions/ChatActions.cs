@@ -51,7 +51,7 @@ namespace Apps.MicrosoftTeams.Actions
             var messages = await client.Me.Chats[input.ChatId].Messages.GetAsync();
             return new GetLastMessages()
             {
-                Messages = messages.Value.TakeLast(input.MessagesAmount).Select(m => new MessageDto() { Id = m.Id, Content = m.Body?.Content})
+                Messages = messages.Value.Take(input.MessagesAmount).Select(m => new MessageDto() { Id = m.Id, Content = m.Body?.Content})
             };
         }
 
@@ -63,6 +63,14 @@ namespace Apps.MicrosoftTeams.Actions
             var message = await client.Me.Chats[input.ChatId].Messages.PostAsync(
                 new ChatMessage() { Body = new ItemBody() { Content = input.Message } });
             return new SendMessageToChatResponse() { MessageId = message.Id };
+        }
+
+        [Action("Delete message from chat", Description = "Delete message from chat")]
+        public async Task DeleteMessageFromChat(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] GetChatMessageRequest input)
+        {
+            var client = new MSTeamsClient(authenticationCredentialsProviders);
+            await client.Me.Chats[input.ChatId].Messages[input.MessageId].SoftDelete.PostAsync();
         }
     }
 }
