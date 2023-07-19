@@ -12,6 +12,7 @@ using Apps.MicrosoftTeams.Models.Responses;
 
 namespace Apps.MicrosoftTeams.Actions
 {
+    [ActionList]
     public class UserActions
     {
         [Action("Get my user information", Description = "Get my user information")]
