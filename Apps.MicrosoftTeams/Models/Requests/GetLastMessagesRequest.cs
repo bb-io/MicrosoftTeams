@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.MicrosoftTeams.Models.Requests
 {
     public class GetLastMessagesRequest
     {
+        [Display("Chat ID")]
         public string ChatId { get; set; }
+        
+        [Display("Messages amount")]
         public int MessagesAmount { get; set; }
     }
 }

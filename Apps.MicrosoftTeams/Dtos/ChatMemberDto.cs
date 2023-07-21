@@ -1,9 +1,5 @@
-﻿using Microsoft.Graph.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Blackbird.Applications.Sdk.Common;
+using Microsoft.Graph.Models;
 
 namespace Apps.MicrosoftTeams.Dtos
 {
@@ -15,8 +11,10 @@ namespace Apps.MicrosoftTeams.Dtos
             DisplayName = member.DisplayName;
         }
 
+        [Display("Chat member ID")]
         public string Id { get; set; }
 
+        [Display("Display name")]
         public string DisplayName { get; set; }
     }
 }

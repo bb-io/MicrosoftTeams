@@ -1,7 +1,6 @@
 ﻿using Apps.MicrosoftTeams.Authorization.OAuth2;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication.OAuth2;
-using System.Xml.Linq;
 
 namespace Apps.MicrosoftTeams
 {

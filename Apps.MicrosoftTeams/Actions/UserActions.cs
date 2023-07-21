@@ -2,11 +2,6 @@
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Apps.MicrosoftTeams.Dtos;
 using Apps.MicrosoftTeams.Models.Responses;
 

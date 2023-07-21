@@ -1,18 +1,10 @@
 ﻿using Apps.MicrosoftTeams.Dtos;
 using Apps.MicrosoftTeams.Models.Requests;
 using Apps.MicrosoftTeams.Models.Responses;
-using Azure.Core;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using Microsoft.Kiota.Abstractions.Authentication;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Apps.MicrosoftTeams.Actions
 {

@@ -1,9 +1,5 @@
-﻿using Microsoft.Graph.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Blackbird.Applications.Sdk.Common;
+using Microsoft.Graph.Models;
 
 namespace Apps.MicrosoftTeams.Dtos
 {
@@ -24,6 +20,8 @@ namespace Apps.MicrosoftTeams.Dtos
             Id = user.Id;
         }
 
+        [Display("User ID")]
+        public string Id { get; set; }
         public List<string> BusinessPhones { get; set; }
         public string DisplayName { get; set; }
         public string GivenName { get; set; }
@@ -34,6 +32,5 @@ namespace Apps.MicrosoftTeams.Dtos
         public string PreferredLanguage { get; set; }
         public string Surname { get; set; }
         public string UserPrincipalName { get; set; }
-        public string Id { get; set; }
     }
 }
