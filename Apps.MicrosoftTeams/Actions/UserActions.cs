@@ -4,6 +4,8 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common;
 using Apps.MicrosoftTeams.Dtos;
 using Apps.MicrosoftTeams.Models.Responses;
+using Microsoft.Graph.Models.ODataErrors;
+using Microsoft.Graph.Models;
 
 namespace Apps.MicrosoftTeams.Actions
 {
