@@ -6,7 +6,7 @@ namespace Apps.MicrosoftTeams.Models.Requests
 {
     public class SendMessageToChatRequest
     {
-        [Display("Chat ID")]
+        [Display("Chat")]
         [DataSource(typeof(ChatHandler))]
         public string ChatId { get; set; }
 

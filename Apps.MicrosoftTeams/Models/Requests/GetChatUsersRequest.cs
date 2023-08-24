@@ -6,7 +6,7 @@ namespace Apps.MicrosoftTeams.Models.Requests
 {
     public class GetChatUsersRequest
     {
-        [Display("Chat ID")]
+        [Display("Chat")]
         [DataSource(typeof(ChatHandler))]
         public string ChatId { get; set; }
     }
