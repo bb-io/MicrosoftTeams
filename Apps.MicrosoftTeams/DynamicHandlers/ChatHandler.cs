@@ -11,7 +11,8 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
         {    
         }
 
-        public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
+        public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, 
+            CancellationToken cancellationToken)
         {
             var contextInv = InvocationContext;
             var client = new MSTeamsClient(contextInv.AuthenticationCredentialsProviders);
@@ -19,13 +20,10 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             var chats = await client.Me.Chats.GetAsync(requestConfiguration =>
             {
                 requestConfiguration.QueryParameters.Expand = new[] { "members" };
-                if (!string.IsNullOrEmpty(context.SearchString))
-                {
-                    var filter = $"contains(topic, '{context.SearchString}') or (members/any(x:contains(x/displayName, " +
-                                 $"'{context.SearchString}')) and chatType eq 'oneOnOne')";
-                    requestConfiguration.QueryParameters.Filter = filter;
-                    requestConfiguration.QueryParameters.Orderby = new []{ "lastMessagePreview/createdDateTime desc" };
-                }
+                var filter = $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
+                             $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
+                requestConfiguration.QueryParameters.Filter = filter;
+                requestConfiguration.QueryParameters.Orderby = new []{ "lastMessagePreview/createdDateTime desc" };
             }, cancellationToken);
             
             return chats.Value
