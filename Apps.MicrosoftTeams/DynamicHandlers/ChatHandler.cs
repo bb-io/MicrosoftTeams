@@ -29,8 +29,9 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             return chats.Value
                 .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
                     ? v.ChatType == ChatType.OneOnOne 
-                        ? v.Members.FirstOrDefault(m => m.Id != me.Id).DisplayName 
-                        : string.Join(", ", v.Members.Select(m => m.DisplayName)) 
+                        ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id).DisplayName 
+                        : string.Join(", ", v.Members.Where(m => ((AadUserConversationMember)m).UserId != me.Id)
+                            .Select(m => m.DisplayName)) 
                     : v.Topic);
         }
     }
