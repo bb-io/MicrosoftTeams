@@ -1,4 +1,4 @@
-﻿using Apps.MicrosoftTeams.Actions;
+﻿using Apps.MicrosoftTeams.Dtos;
 
 namespace Apps.MicrosoftTeams.Models.Responses
 {

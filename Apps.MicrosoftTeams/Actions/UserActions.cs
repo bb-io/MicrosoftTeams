@@ -1,51 +1,53 @@
-﻿using Apps.MicrosoftTeams.Models.Requests;
-using Blackbird.Applications.Sdk.Common.Actions;
+﻿using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common;
 using Apps.MicrosoftTeams.Dtos;
+using Apps.MicrosoftTeams.Models.Identifiers;
 using Apps.MicrosoftTeams.Models.Responses;
-using Microsoft.Graph.Models.ODataErrors;
-using Microsoft.Graph.Models;
+using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.MicrosoftTeams.Actions
 {
     [ActionList]
-    public class UserActions
+    public class UserActions : BaseInvocable
     {
-        [Action("Get my user information", Description = "Get my user information")]
-        public async Task<UserDto> GetMe(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
+        private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders;
+
+        protected UserActions(InvocationContext invocationContext) : base(invocationContext)
         {
-            var client = new MSTeamsClient(authenticationCredentialsProviders);
+            _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
+        }
+        
+        [Action("Get my user information", Description = "Get my user information")]
+        public async Task<UserDto> GetMe()
+        {
+            var client = new MSTeamsClient(_authenticationCredentialsProviders);
             var myInfo = await client.Me.GetAsync();
             return new UserDto(myInfo);
         }
 
         [Action("List all users", Description = "List all users")]
-        public async Task<ListUsersResponse> ListUsers(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
+        public async Task<ListUsersResponse> ListUsers()
         {
-            var client = new MSTeamsClient(authenticationCredentialsProviders);
+            var client = new MSTeamsClient(_authenticationCredentialsProviders);
             var users = await client.Users.GetAsync();
-            return new ListUsersResponse() {
-                Users = users.Value.Select(u => new UserDto(u))
-            };
+            return new ListUsersResponse { Users = users.Value.Select(u => new UserDto(u)) };
         }
 
         [Action("Get user", Description = "Get user by ID")]
-        public async Task<UserDto> GetUser(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-            [ActionParameter] GetUserRequest input)
+        public async Task<UserDto> GetUser([ActionParameter] UserIdentifier userIdentifier)
         {
-            var client = new MSTeamsClient(authenticationCredentialsProviders);
-            var user = await client.Users[input.UserId].GetAsync();
+            var client = new MSTeamsClient(_authenticationCredentialsProviders);
+            var user = await client.Users[userIdentifier.UserId].GetAsync();
             return new UserDto(user);
         }
 
         [Action("Get chat members", Description = "Get chat members")]
-        public async Task<GetChatUsersResponse> GetChatUsers(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-            [ActionParameter] GetChatUsersRequest input)
+        public async Task<GetChatUsersResponse> GetChatUsers([ActionParameter] ChatIdentifier chatIdentifier)
         {
-            var client = new MSTeamsClient(authenticationCredentialsProviders);
-            var members = await client.Me.Chats[input.ChatId].Members.GetAsync();
-            return new GetChatUsersResponse()
+            var client = new MSTeamsClient(_authenticationCredentialsProviders);
+            var members = await client.Me.Chats[chatIdentifier.ChatId].Members.GetAsync();
+            return new GetChatUsersResponse
             {
                 Members = members.Value.Select(m => new ChatMemberDto(m))
             };
