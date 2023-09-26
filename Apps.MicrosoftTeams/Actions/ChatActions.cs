@@ -5,7 +5,9 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Microsoft.Graph.Models;
+using File = Blackbird.Applications.Sdk.Common.Files.File;
 
 namespace Apps.MicrosoftTeams.Actions
 {
@@ -14,7 +16,7 @@ namespace Apps.MicrosoftTeams.Actions
     {
         private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders;
 
-        protected ChatActions(InvocationContext invocationContext) : base(invocationContext)
+        public ChatActions(InvocationContext invocationContext) : base(invocationContext)
         {
             _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
         }
@@ -37,6 +39,35 @@ namespace Apps.MicrosoftTeams.Actions
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
             var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
             return new MessageDto(message);
+        }
+        
+        [Action("Download files attached to message", Description = "Download files attached to message")]
+        public async Task<DownloadFilesAttachedToMessageResponse> DownloadFilesAttachedToMessage(
+            [ActionParameter] ChatIdentifier chatIdentifier, 
+            [ActionParameter] MessageIdentifier messageIdentifier)
+        {
+            var client = new MSTeamsClient(_authenticationCredentialsProviders);
+            var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
+            var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
+            var resultFiles = new List<File>();
+
+            foreach (var attachment in fileAttachments)
+            {
+                var sharingUrl = attachment.ContentUrl;
+                var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
+                var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
+                var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
+                var fileContent = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
+                var contentBytes = await fileContent.GetByteData();
+                
+                resultFiles.Add(new File(contentBytes)
+                {
+                    Name = fileData.Name,
+                    ContentType = fileData.FileObject.MimeType
+                });
+            }
+            
+            return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
         }
 
         [Action("Get the most recent messages", Description = "Get the most recent messages")]

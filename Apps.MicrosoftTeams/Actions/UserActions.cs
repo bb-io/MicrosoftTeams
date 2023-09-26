@@ -13,7 +13,7 @@ namespace Apps.MicrosoftTeams.Actions
     {
         private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders;
 
-        protected UserActions(InvocationContext invocationContext) : base(invocationContext)
+        public UserActions(InvocationContext invocationContext) : base(invocationContext)
         {
             _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
         }
