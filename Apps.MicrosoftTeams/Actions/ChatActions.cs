@@ -1,5 +1,6 @@
 ﻿using Apps.MicrosoftTeams.Dtos;
 using Apps.MicrosoftTeams.Models.Identifiers;
+using Apps.MicrosoftTeams.Models.Requests;
 using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
@@ -84,11 +85,19 @@ namespace Apps.MicrosoftTeams.Actions
 
         [Action("Send text message to chat", Description = "Send text message to chat")]
         public async Task<ChatMessageDto> SendMessageToChat([ActionParameter] ChatIdentifier chatIdentifier,
-            [ActionParameter] [Display("Message")] string message)
+            [ActionParameter] SendMessageRequest input)
         {
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
-            var sentMessage = await client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(new ChatMessage
-                { Body = new ItemBody { Content = message } });
+            var requestBody = new ChatMessage
+            {
+                Body = new ItemBody
+                {
+                    ContentType = BodyType.Html,
+                    Content = input.Message
+                }
+            };
+            
+            var sentMessage = await client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(requestBody);
             return new ChatMessageDto(sentMessage);
         }
 
