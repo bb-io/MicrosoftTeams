@@ -3,9 +3,9 @@ using Microsoft.Graph.Models;
 
 namespace Apps.MicrosoftTeams.Dtos
 {
-    public class MessageDto
+    public class ChatMessageDto
     {
-        public MessageDto(ChatMessage message)
+        public ChatMessageDto(ChatMessage message)
         {
             Id = message.Id;
             Content = message.Body.Content;

@@ -33,15 +33,15 @@ namespace Apps.MicrosoftTeams.Actions
         }
 
         [Action("Get chat message", Description = "Get chat message")]
-        public async Task<MessageDto> GetChatMessage([ActionParameter] ChatIdentifier chatIdentifier, 
+        public async Task<ChatMessageDto> GetChatMessage([ActionParameter] ChatIdentifier chatIdentifier, 
             [ActionParameter] MessageIdentifier messageIdentifier)
         {
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
             var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
-            return new MessageDto(message);
+            return new ChatMessageDto(message);
         }
         
-        [Action("Download files attached to message", Description = "Download files attached to message")]
+        [Action("Download files attached to chat message", Description = "Download files attached to chat message")]
         public async Task<DownloadFilesAttachedToMessageResponse> DownloadFilesAttachedToMessage(
             [ActionParameter] ChatIdentifier chatIdentifier, 
             [ActionParameter] MessageIdentifier messageIdentifier)
@@ -70,7 +70,7 @@ namespace Apps.MicrosoftTeams.Actions
             return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
         }
 
-        [Action("Get the most recent messages", Description = "Get the most recent messages")]
+        [Action("Get the most recent chat messages", Description = "Get the most recent chat messages")]
         public async Task<GetLastMessages> GetLastMessages([ActionParameter] ChatIdentifier chatIdentifier,
             [ActionParameter] [Display("Messages amount")] int messagesAmount)
         {
@@ -78,18 +78,18 @@ namespace Apps.MicrosoftTeams.Actions
             var messages = await client.Me.Chats[chatIdentifier.ChatId].Messages.GetAsync();
             return new GetLastMessages
             {
-                Messages = messages.Value.Take(messagesAmount).Select(m => new MessageDto(m))
+                Messages = messages.Value.Take(messagesAmount).Select(m => new ChatMessageDto(m))
             };
         }
 
         [Action("Send text message to chat", Description = "Send text message to chat")]
-        public async Task<MessageDto> SendMessageToChat([ActionParameter] ChatIdentifier chatIdentifier,
+        public async Task<ChatMessageDto> SendMessageToChat([ActionParameter] ChatIdentifier chatIdentifier,
             [ActionParameter] [Display("Message")] string message)
         {
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
             var sentMessage = await client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(new ChatMessage
                 { Body = new ItemBody { Content = message } });
-            return new MessageDto(sentMessage);
+            return new ChatMessageDto(sentMessage);
         }
 
         [Action("Delete message from chat", Description = "Delete message from chat")]
