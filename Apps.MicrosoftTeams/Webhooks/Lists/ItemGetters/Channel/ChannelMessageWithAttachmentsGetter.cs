@@ -1,4 +1,5 @@
 ﻿using Apps.MicrosoftTeams.Dtos;
+using Apps.MicrosoftTeams.Webhooks.Inputs;
 using Apps.MicrosoftTeams.Webhooks.Payload;
 using Blackbird.Applications.Sdk.Common.Authentication;
 
@@ -6,9 +7,14 @@ namespace Apps.MicrosoftTeams.Webhooks.Lists.ItemGetters.Channel;
 
 public class ChannelMessageWithAttachmentsGetter : ItemGetter<ChannelMessageDto>
 {
+    private readonly SenderInput _sender;
+
     public ChannelMessageWithAttachmentsGetter(
-        IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders) 
-        : base(authenticationCredentialsProviders) { }
+        IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, SenderInput sender)
+        : base(authenticationCredentialsProviders)
+    {
+        _sender = sender;
+    }
 
     public override async Task<ChannelMessageDto?> GetItem(EventPayload eventPayload)
     {
@@ -18,6 +24,9 @@ public class ChannelMessageWithAttachmentsGetter : ItemGetter<ChannelMessageDto>
         var message = await client.Teams[teamId].Channels[channelId].Messages[eventPayload.ResourceData.Id].GetAsync();
         
         if (!message.Attachments.Any(a => a.ContentType == "reference"))
+            return null;
+        
+        if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
             return null;
         
         return new ChannelMessageDto(message);

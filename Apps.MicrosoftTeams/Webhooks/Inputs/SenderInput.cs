@@ -2,11 +2,11 @@
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
-namespace Apps.MicrosoftTeams.Models.Identifiers;
+namespace Apps.MicrosoftTeams.Webhooks.Inputs;
 
-public class UserIdentifier
+public class SenderInput
 {
-    [Display("User")]
+    [Display("Sender")]
     [DataSource(typeof(UserHandler))]
-    public string UserId { get; set; }
+    public string? UserId { get; set; }
 }

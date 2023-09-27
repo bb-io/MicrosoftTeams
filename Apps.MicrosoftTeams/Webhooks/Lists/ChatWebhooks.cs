@@ -15,17 +15,18 @@ public class ChatWebhooks : BaseWebhookList
     [Webhook("On message sent to chat", typeof(MessageSentToChatWebhookHandler), 
         Description = "This webhook is triggered when a message is sent to the chat.")]
     public async Task<WebhookResponse<ChatMessageDto>> OnMessageSent(WebhookRequest request, 
-        [WebhookParameter] ChatInput chat)
+        [WebhookParameter] ChatInput chat, [WebhookParameter] SenderInput sender)
     {
-        return await HandleWebhookRequest(request, new ChatMessageGetter(AuthenticationCredentialsProviders, chat));
+        return await HandleWebhookRequest(request, 
+            new ChatMessageGetter(AuthenticationCredentialsProviders, chat, sender));
     }
     
     [Webhook("On message with attachments sent to chat", typeof(MessageSentToChatWebhookHandler), 
         Description = "This webhook is triggered when a message with attachments is sent to the chat.")]
     public async Task<WebhookResponse<ChatMessageDto>> OnMessageWithAttachmentsSent(WebhookRequest request, 
-        [WebhookParameter] ChatInput chat)
+        [WebhookParameter] ChatInput chat, [WebhookParameter] SenderInput sender)
     {
         return await HandleWebhookRequest(request, 
-            new ChatMessageWithAttachmentsGetter(AuthenticationCredentialsProviders, chat));
+            new ChatMessageWithAttachmentsGetter(AuthenticationCredentialsProviders, chat, sender));
     }
 }

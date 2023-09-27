@@ -8,11 +8,13 @@ namespace Apps.MicrosoftTeams.Webhooks.Lists.ItemGetters.Chat;
 public class ChatMessageGetter : ItemGetter<ChatMessageDto>
 {
     private readonly ChatInput _chat;
+    private readonly SenderInput _sender;
     
     public ChatMessageGetter(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-        ChatInput chat) : base(authenticationCredentialsProviders)
+        ChatInput chat, SenderInput sender) : base(authenticationCredentialsProviders)
     {
         _chat = chat;
+        _sender = sender;
     }
 
     public override async Task<ChatMessageDto?> GetItem(EventPayload eventPayload)
@@ -24,6 +26,10 @@ public class ChatMessageGetter : ItemGetter<ChatMessageDto>
         
         var client = new MSTeamsClient(AuthenticationCredentialsProviders);
         var message = await client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync();
+        
+        if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
+            return null;
+        
         return new ChatMessageDto(message);
     }
 }

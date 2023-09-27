@@ -8,11 +8,13 @@ namespace Apps.MicrosoftTeams.Webhooks.Lists.ItemGetters.Chat;
 public class ChatMessageWithAttachmentsGetter : ItemGetter<ChatMessageDto>
 {
     private readonly ChatInput _chat;
+    private readonly SenderInput _sender;
     
     public ChatMessageWithAttachmentsGetter(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-        ChatInput chat) : base(authenticationCredentialsProviders)
+        ChatInput chat, SenderInput sender) : base(authenticationCredentialsProviders)
     {
         _chat = chat;
+        _sender = sender;
     }
 
     public override async Task<ChatMessageDto?> GetItem(EventPayload eventPayload)
@@ -26,6 +28,9 @@ public class ChatMessageWithAttachmentsGetter : ItemGetter<ChatMessageDto>
         var message = await client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync();
 
         if (!message.Attachments.Any(a => a.ContentType == "reference"))
+            return null;
+        
+        if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
             return null;
 
         return new ChatMessageDto(message);

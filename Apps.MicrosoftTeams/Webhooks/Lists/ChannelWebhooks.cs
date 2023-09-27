@@ -1,5 +1,6 @@
 ﻿using Apps.MicrosoftTeams.Dtos;
 using Apps.MicrosoftTeams.Webhooks.Handlers.Channel;
+using Apps.MicrosoftTeams.Webhooks.Inputs;
 using Apps.MicrosoftTeams.Webhooks.Lists.ItemGetters.Channel;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
@@ -13,16 +14,19 @@ public class ChannelWebhooks : BaseWebhookList
     
     [Webhook("On message sent to channel", typeof(MessageSentToChannelWebhookHandler), 
         Description = "This webhook is triggered when a message is sent to the channel.")]
-    public async Task<WebhookResponse<ChannelMessageDto>> OnMessageSent(WebhookRequest request)
+    public async Task<WebhookResponse<ChannelMessageDto>> OnMessageSent(WebhookRequest request,
+        [WebhookParameter] SenderInput sender)
     {
-        return await HandleWebhookRequest(request, new ChannelMessageGetter(AuthenticationCredentialsProviders));
+        return await HandleWebhookRequest(request, 
+            new ChannelMessageGetter(AuthenticationCredentialsProviders, sender));
     }
     
     [Webhook("On message with attachment sent to channel", typeof(MessageSentToChannelWebhookHandler), 
         Description = "This webhook is triggered when a message is sent to the channel.")]
-    public async Task<WebhookResponse<ChannelMessageDto>> OnMessageWithAttachmentSent(WebhookRequest request)
+    public async Task<WebhookResponse<ChannelMessageDto>> OnMessageWithAttachmentSent(WebhookRequest request,
+        [WebhookParameter] SenderInput sender)
     {
         return await HandleWebhookRequest(request, 
-            new ChannelMessageWithAttachmentsGetter(AuthenticationCredentialsProviders));
+            new ChannelMessageWithAttachmentsGetter(AuthenticationCredentialsProviders, sender));
     }
 }
