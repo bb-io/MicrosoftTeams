@@ -18,7 +18,7 @@ public class ChatWebhooks : BaseWebhookList
         [WebhookParameter] ChatInput chat, [WebhookParameter] SenderInput sender)
     {
         return await HandleWebhookRequest(request, 
-            new ChatMessageGetter(AuthenticationCredentialsProviders, chat, sender));
+            new ChatMessageWithSenderGetter(AuthenticationCredentialsProviders, chat, sender));
     }
     
     [Webhook("On message with attachments sent to chat", typeof(MessageSentToChatWebhookHandler), 
@@ -28,5 +28,14 @@ public class ChatWebhooks : BaseWebhookList
     {
         return await HandleWebhookRequest(request, 
             new ChatMessageWithAttachmentsGetter(AuthenticationCredentialsProviders, chat, sender));
+    }
+    
+    [Webhook("On user mentioned in chat", typeof(MessageSentToChatWebhookHandler), 
+        Description = "This webhook is triggered when a new message is sent to the chat with specified user mentioned.")]
+    public async Task<WebhookResponse<ChatMessageDto>> OnUserMentioned(WebhookRequest request, 
+        [WebhookParameter] ChatInput chat, [WebhookParameter] UserInput user)
+    {
+        return await HandleWebhookRequest(request, 
+            new ChatMessageWithUserMentionedGetter(AuthenticationCredentialsProviders, chat, user));
     }
 }

@@ -5,16 +5,17 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 
 namespace Apps.MicrosoftTeams.Webhooks.Lists.ItemGetters.Chat;
 
-public class ChatMessageGetter : ItemGetter<ChatMessageDto>
+public class ChatMessageWithUserMentionedGetter : ItemGetter<ChatMessageDto>
 {
     private readonly ChatInput _chat;
-    private readonly SenderInput _sender;
+    private readonly UserInput _user;
     
-    public ChatMessageGetter(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-        ChatInput chat, SenderInput sender) : base(authenticationCredentialsProviders)
+    public ChatMessageWithUserMentionedGetter(
+        IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+        ChatInput chat, UserInput user) : base(authenticationCredentialsProviders)
     {
         _chat = chat;
-        _sender = sender;
+        _user = user;
     }
 
     public override async Task<ChatMessageDto?> GetItem(EventPayload eventPayload)
@@ -27,7 +28,7 @@ public class ChatMessageGetter : ItemGetter<ChatMessageDto>
         var client = new MSTeamsClient(AuthenticationCredentialsProviders);
         var message = await client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync();
         
-        if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
+        if (!message.Mentions.Any(user => user.Mentioned.User.Id == _user.UserId))
             return null;
         
         return new ChatMessageDto(message);

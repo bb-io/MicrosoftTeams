@@ -5,15 +5,15 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 
 namespace Apps.MicrosoftTeams.Webhooks.Lists.ItemGetters.Channel;
 
-public class ChannelMessageGetter : ItemGetter<ChannelMessageDto>
+public class ChannelMessageWithUserMentionedGetter : ItemGetter<ChannelMessageDto>
 {
-    private readonly SenderInput _sender;
+    private readonly UserInput _user;
 
-    public ChannelMessageGetter(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-        SenderInput sender)
+    public ChannelMessageWithUserMentionedGetter(
+        IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, UserInput user)
         : base(authenticationCredentialsProviders)
     {
-        _sender = sender;
+        _user = user;
     }
 
     public override async Task<ChannelMessageDto?> GetItem(EventPayload eventPayload)
@@ -23,7 +23,7 @@ public class ChannelMessageGetter : ItemGetter<ChannelMessageDto>
         var channelId = GetIdFromEndpoint(eventPayload.ResourceData.Endpoint, "channels");
         var message = await client.Teams[teamId].Channels[channelId].Messages[eventPayload.ResourceData.Id].GetAsync();
 
-        if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
+        if (!message.Mentions.Any(user => user.Mentioned.User.Id == _user.UserId))
             return null;
         
         return new ChannelMessageDto(message);
