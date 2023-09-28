@@ -8,6 +8,7 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Microsoft.Graph.Models;
+using Microsoft.Graph.Models.ODataErrors;
 using File = Blackbird.Applications.Sdk.Common.Files.File;
 
 namespace Apps.MicrosoftTeams.Actions
@@ -26,11 +27,19 @@ namespace Apps.MicrosoftTeams.Actions
         public async Task<ListChatsResponse> ListChats()
         {
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
-            var chats = await client.Me.Chats.GetAsync();
-            return new ListChatsResponse
+
+            try
             {
-                Chats = chats.Value.Select(chat => new ChatDto(chat)).ToList()
-            };
+                var chats = await client.Me.Chats.GetAsync();
+                return new ListChatsResponse
+                {
+                    Chats = chats.Value.Select(chat => new ChatDto(chat)).ToList()
+                };
+            }
+            catch (ODataError error)
+            {
+                throw new Exception(error.Error.Message);
+            }
         }
 
         [Action("Get chat message", Description = "Get chat message")]
@@ -38,8 +47,16 @@ namespace Apps.MicrosoftTeams.Actions
             [ActionParameter] MessageIdentifier messageIdentifier)
         {
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
-            var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
-            return new ChatMessageDto(message);
+
+            try
+            {
+                var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
+                return new ChatMessageDto(message);
+            }
+            catch (ODataError error)
+            {
+                throw new Exception(error.Error.Message);
+            }
         }
         
         [Action("Download files attached to chat message", Description = "Download files attached to chat message")]
@@ -48,27 +65,35 @@ namespace Apps.MicrosoftTeams.Actions
             [ActionParameter] MessageIdentifier messageIdentifier)
         {
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
-            var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
-            var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
-            var resultFiles = new List<File>();
 
-            foreach (var attachment in fileAttachments)
+            try
             {
-                var sharingUrl = attachment.ContentUrl;
-                var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
-                var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
-                var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
-                var fileContent = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
-                var contentBytes = await fileContent.GetByteData();
-                
-                resultFiles.Add(new File(contentBytes)
+                var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
+                var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
+                var resultFiles = new List<File>();
+
+                foreach (var attachment in fileAttachments)
                 {
-                    Name = fileData.Name,
-                    ContentType = fileData.FileObject.MimeType
-                });
-            }
+                    var sharingUrl = attachment.ContentUrl;
+                    var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
+                    var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
+                    var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
+                    var fileContent = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
+                    var contentBytes = await fileContent.GetByteData();
+                
+                    resultFiles.Add(new File(contentBytes)
+                    {
+                        Name = fileData.Name,
+                        ContentType = fileData.FileObject.MimeType
+                    });
+                }
             
-            return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
+                return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
+            }
+            catch (ODataError error)
+            {
+                throw new Exception(error.Error.Message);
+            }
         }
 
         [Action("Get the most recent chat messages", Description = "Get the most recent chat messages")]
@@ -76,11 +101,19 @@ namespace Apps.MicrosoftTeams.Actions
             [ActionParameter] [Display("Messages amount")] int messagesAmount)
         {
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
-            var messages = await client.Me.Chats[chatIdentifier.ChatId].Messages.GetAsync();
-            return new GetLastMessages
+
+            try
             {
-                Messages = messages.Value.Take(messagesAmount).Select(m => new ChatMessageDto(m))
-            };
+                var messages = await client.Me.Chats[chatIdentifier.ChatId].Messages.GetAsync();
+                return new GetLastMessages
+                {
+                    Messages = messages.Value.Take(messagesAmount).Select(m => new ChatMessageDto(m))
+                };
+            }
+            catch (ODataError error)
+            {
+                throw new Exception(error.Error.Message);
+            } 
         }
 
         [Action("Send text message to chat", Description = "Send text message to chat")]
@@ -96,9 +129,16 @@ namespace Apps.MicrosoftTeams.Actions
                     Content = input.Message
                 }
             };
-            
-            var sentMessage = await client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(requestBody);
-            return new ChatMessageDto(sentMessage);
+
+            try
+            {
+                var sentMessage = await client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(requestBody);
+                return new ChatMessageDto(sentMessage);
+            }
+            catch (ODataError error)
+            {
+                throw new Exception(error.Error.Message);
+            }
         }
 
         [Action("Delete message from chat", Description = "Delete message from chat")]
@@ -106,7 +146,15 @@ namespace Apps.MicrosoftTeams.Actions
             [ActionParameter] MessageIdentifier messageIdentifier)
         {
             var client = new MSTeamsClient(_authenticationCredentialsProviders);
-            await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].SoftDelete.PostAsync();
+
+            try
+            {
+                await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].SoftDelete.PostAsync();
+            }
+            catch (ODataError error)
+            {
+                throw new Exception(error.Error.Message);
+            }
         }
     }
 }

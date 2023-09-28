@@ -9,6 +9,7 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Microsoft.Graph.Models;
+using Microsoft.Graph.Models.ODataErrors;
 using Newtonsoft.Json;
 using File = Blackbird.Applications.Sdk.Common.Files.File;
 
@@ -30,9 +31,17 @@ public class ChannelActions : BaseInvocable
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
-        var message = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId]
-            .Messages[messageIdentifier.MessageId].GetAsync();
-        return new ChannelMessageDto(message);
+
+        try
+        {
+            var message = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId]
+                .Messages[messageIdentifier.MessageId].GetAsync();
+            return new ChannelMessageDto(message);
+        }
+        catch (ODataError error)
+        {
+            throw new Exception(error.Error.Message);
+        }
     }
     
     [Action("Download files attached to channel message", Description = "Download files attached to channel message")]
@@ -42,28 +51,36 @@ public class ChannelActions : BaseInvocable
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
-        var message = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId]
-            .Messages[messageIdentifier.MessageId].GetAsync();
-        var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
-        var resultFiles = new List<File>();
 
-        foreach (var attachment in fileAttachments)
+        try
         {
-            var sharingUrl = attachment.ContentUrl;
-            var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
-            var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
-            var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
-            var fileContent = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
-            var contentBytes = await fileContent.GetByteData();
-                
-            resultFiles.Add(new File(contentBytes)
+            var message = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId]
+                .Messages[messageIdentifier.MessageId].GetAsync();
+            var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
+            var resultFiles = new List<File>();
+
+            foreach (var attachment in fileAttachments)
             {
-                Name = fileData.Name,
-                ContentType = fileData.FileObject.MimeType
-            });
-        }
+                var sharingUrl = attachment.ContentUrl;
+                var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
+                var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
+                var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
+                var fileContent = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
+                var contentBytes = await fileContent.GetByteData();
+                
+                resultFiles.Add(new File(contentBytes)
+                {
+                    Name = fileData.Name,
+                    ContentType = fileData.FileObject.MimeType
+                });
+            }
             
-        return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
+            return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
+        }
+        catch (ODataError error)
+        {
+            throw new Exception(error.Error.Message);
+        }
     }
     
     [Action("Send message to channel", Description = "Send message to channel")]
@@ -80,10 +97,17 @@ public class ChannelActions : BaseInvocable
                 Content = input.Message
             }
         };
-        
-        var sentMessage = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId].Messages
-            .PostAsync(requestBody);
-        return new ChannelMessageDto(sentMessage);
+
+        try
+        {
+            var sentMessage = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId].Messages
+                .PostAsync(requestBody);
+            return new ChannelMessageDto(sentMessage);
+        }
+        catch (ODataError error)
+        {
+            throw new Exception(error.Error.Message);
+        }
     }
     
     [Action("Reply to message in channel", Description = "Reply to message in channel")]
@@ -100,9 +124,16 @@ public class ChannelActions : BaseInvocable
                 Content = input.Message
             },
         };
-        
-        var sentReply = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId]
-            .Messages[messageIdentifier.MessageId].Replies.PostAsync(requestBody);
-        return new ChannelMessageDto(sentReply);
+
+        try
+        {
+            var sentReply = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId]
+                .Messages[messageIdentifier.MessageId].Replies.PostAsync(requestBody);
+            return new ChannelMessageDto(sentReply);
+        }
+        catch (ODataError error)
+        {
+            throw new Exception(error.Error.Message);
+        }
     }
 }
