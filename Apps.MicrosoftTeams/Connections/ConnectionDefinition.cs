@@ -1,9 +1,5 @@
 ﻿using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Apps.MicrosoftTeams.Connections
 {
@@ -12,18 +8,20 @@ namespace Apps.MicrosoftTeams.Connections
 
         public IEnumerable<ConnectionPropertyGroup> ConnectionPropertyGroups => new List<ConnectionPropertyGroup>()
         {
-            new ConnectionPropertyGroup
+            new()
             {
                 Name = "OAuth",
                 AuthenticationType = ConnectionAuthenticationType.OAuth2,
                 ConnectionUsage = ConnectionUsage.Actions,
-                ConnectionProperties = new List<ConnectionProperty>()
+                ConnectionProperties = new List<ConnectionProperty>
                 {
+                    new("AdminPermissionRequired") { DisplayName = "Channel messages scope required" }
                 }
-            },
+            }
         };
 
-        public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(Dictionary<string, string> values)
+        public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
+            Dictionary<string, string> values)
         {
             var token = values.First(v => v.Key == "access_token");
             yield return new AuthenticationCredentialsProvider(
