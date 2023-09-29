@@ -2,7 +2,6 @@
 using Apps.MicrosoftTeams.Webhooks.Handlers.Channel;
 using Apps.MicrosoftTeams.Webhooks.Inputs;
 using Apps.MicrosoftTeams.Webhooks.Lists.ItemGetters.Channel;
-using Apps.MicrosoftTeams.Webhooks.Lists.ItemGetters.Chat;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
 

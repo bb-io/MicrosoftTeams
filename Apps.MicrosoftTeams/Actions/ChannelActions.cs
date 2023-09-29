@@ -8,6 +8,9 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Microsoft.Graph;
+using Microsoft.Graph.Drives.Item.Items.Item.Content;
+using Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
 using Newtonsoft.Json;
@@ -89,14 +92,7 @@ public class ChannelActions : BaseInvocable
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
-        var requestBody = new ChatMessage
-        {
-            Body = new ItemBody
-            {
-                ContentType = BodyType.Html,
-                Content = input.Message
-            }
-        };
+        var requestBody = await CreateChannelMessage(client, input);
 
         try
         {
@@ -116,14 +112,7 @@ public class ChannelActions : BaseInvocable
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
-        var requestBody = new ChatMessage
-        {
-            Body = new ItemBody
-            {
-                ContentType = BodyType.Html,
-                Content = input.Message
-            },
-        };
+        var requestBody = await CreateChannelMessage(client, input);
 
         try
         {
@@ -135,5 +124,99 @@ public class ChannelActions : BaseInvocable
         {
             throw new Exception(error.Error.Message);
         }
+    }
+
+    private async Task<ChatMessage> CreateChannelMessage(MSTeamsClient client, SendMessageRequest input)
+    {
+         var requestBody = new ChatMessage
+        {
+            Body = new ItemBody
+            {
+                ContentType = BodyType.Html,
+                Content = input.Message
+            },
+            Attachments = new List<ChatMessageAttachment>()
+        };
+
+        try
+        {
+            if (input.AttachmentFile is not null || input.OneDriveAttachmentFileId is not null)
+            {
+                var drive = await client.Me.Drive.GetAsync();
+
+                if (input.OneDriveAttachmentFileId is not null)
+                {
+                    var oneDriveAttachmentFile = await client.Drives[drive.Id].Items[input.OneDriveAttachmentFileId].GetAsync();
+                    var attachmentId = oneDriveAttachmentFile.ETag.Split("{")[1].Split("}")[0];
+                    requestBody.Attachments.Add(new()
+                    {
+                        Id = attachmentId,
+                        ContentType = "reference",
+                        ContentUrl = oneDriveAttachmentFile.WebUrl,
+                        Name = oneDriveAttachmentFile.Name
+                    });
+                    requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
+                }
+
+                if (input.AttachmentFile is not null)
+                {
+                    var attachmentFile = await UploadFile(input.AttachmentFile);
+                    var attachmentId = attachmentFile.ETag.Split("{")[1].Split("}")[0];
+                    requestBody.Attachments.Add(new()
+                    {
+                        Id = attachmentId,
+                        ContentType = "reference",
+                        ContentUrl = attachmentFile.WebUrl,
+                        Name = attachmentFile.Name
+                    });
+                    requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
+                }
+            }
+
+            return requestBody;
+        }
+        catch (ODataError error)
+        {
+            throw new Exception(error.Error.Message);
+        }
+    } 
+    
+    private async Task<DriveItem> UploadFile(File file)
+    {
+        const string teamsFilesFolderName = "Microsoft Teams Chat Files";
+        const int chunkSize = 3932160; 
+        
+        var client = new MSTeamsClient(InvocationContext.AuthenticationCredentialsProviders);
+        var drive = await client.Me.Drive.GetAsync();
+        var root = await client.Drives[drive.Id].Root.GetAsync();
+        var folders = await client.Drives[drive.Id].Items[root.Id].Children.GetAsync();
+        var teamsFilesFolder = folders.Value.FirstOrDefault(folder =>
+            folder.Folder is not null && folder.Name == teamsFilesFolderName);
+
+        if (teamsFilesFolder is null)
+            teamsFilesFolder = await client.Drives[drive.Id].Items[root.Id].Children.PostAsync(new DriveItem
+            {
+                Name = teamsFilesFolderName,
+                Folder = new Folder()
+            });
+        
+        using var stream = new MemoryStream(file.Bytes);
+        var uploadSessionRequestBody = new CreateUploadSessionPostRequestBody
+        {
+            Item = new DriveItemUploadableProperties
+            {
+                AdditionalData = new Dictionary<string, object>
+                {
+                    { "@microsoft.graph.conflictBehavior", "rename" }
+                }
+            }
+        };
+            
+        var uploadSession = await client.Drives[drive.Id].Items[teamsFilesFolder.Id].ItemWithPath(file.Name)
+            .CreateUploadSession.PostAsync(uploadSessionRequestBody);
+
+        var fileUploadTask = new LargeFileUploadTask<DriveItem>(uploadSession, stream, chunkSize, client.RequestAdapter);
+        var uploadResult = await fileUploadTask.UploadAsync();
+        return uploadResult.ItemResponse;
     }
 }

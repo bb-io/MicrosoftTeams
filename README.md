@@ -60,15 +60,15 @@ The second way is to configure admin consent workflow:
 - **Get chat message** retrieves a single message or a message reply in a chat.
 - **Download files attached to chat message**.
 - **Get the most recent chat messages**.
-- **Send text message to chat**.
+- **Send message to chat** sends a new message to the specified chat. Optionally, you can attach file from OneDrive and/or file obtained as a result of the previous action.
 - **Delete message from chat**.
 
 ### Channel
 
 - **Get channel message** retrieves a single message or a message reply in a channel.
 - **Download files attached to channel message**.
-- **Send message to channel** sends a new message in the specified channel.
-- **Reply to message in channel** sends a reply to a message in a specified channel.
+- **Send message to channel** sends a new message to the specified channel. Optionally, you can attach file from OneDrive and/or file obtained as a result of the previous action.
+- **Reply to message in channel** sends a reply to a message to a specified channel. Optionally, you can attach file from OneDrive and/or file obtained as a result of the previous action.
 
 ### Users
 
