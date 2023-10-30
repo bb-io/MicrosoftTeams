@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	<Product>Microsoft Teams</Product>
-	<Version>1.0.0</Version>
+	<Version>1.0.1</Version>
 	<Description>Microsoft Teams is a proprietary business communication platform developed by Microsoft, as part of the Microsoft 365 family of products</Description>
 	<AssemblyName>Apps.MicrosoftTeams</AssemblyName>
   </PropertyGroup>

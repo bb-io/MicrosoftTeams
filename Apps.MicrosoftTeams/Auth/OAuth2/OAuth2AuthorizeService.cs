@@ -13,6 +13,7 @@ namespace Apps.MicrosoftTeams.Authorization.OAuth2
 
         public string GetAuthorizationUrl(Dictionary<string, string> values)
         {
+            string bridgeOauthUrl = $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}/oauth";
             const string oauthUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
             var adminPermissionRequired = values.First(v => v.Key == "AdminPermissionRequired").Value.ToLower();
             var requiredScope = adminPermissionRequired == "yes"
@@ -29,7 +30,7 @@ namespace Apps.MicrosoftTeams.Authorization.OAuth2
                 { "authorization_url", oauthUrl},
                 { "actual_redirect_uri", InvocationContext.UriInfo.AuthorizationCodeRedirectUri.ToString() },
             };
-            return QueryHelpers.AddQueryString(oauthUrl, parameters);
+            return QueryHelpers.AddQueryString(bridgeOauthUrl, parameters);
         }
     }
 }
