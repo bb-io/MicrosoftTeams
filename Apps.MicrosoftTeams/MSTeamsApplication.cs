@@ -1,14 +1,15 @@
 ﻿using Apps.MicrosoftTeams.Authorization.OAuth2;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication.OAuth2;
+using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.MicrosoftTeams
 {
-    public class MSTeamsApplication : IApplication
+    public class MSTeamsApplication : BaseInvocable, IApplication
     {
         private readonly Dictionary<Type, object> _typesInstances;
 
-        public MSTeamsApplication()
+        public MSTeamsApplication(InvocationContext invocationContext) : base(invocationContext)
         {
             _typesInstances = CreateTypesInstances();
         }
@@ -32,8 +33,8 @@ namespace Apps.MicrosoftTeams
         {
             return new Dictionary<Type, object>
             {
-                { typeof(IOAuth2AuthorizeService), new OAuth2AuthorizeService() },
-                { typeof(IOAuth2TokenService), new OAuth2TokenService() }
+                { typeof(IOAuth2AuthorizeService), new OAuth2AuthorizeService(InvocationContext) },
+                { typeof(IOAuth2TokenService), new OAuth2TokenService(InvocationContext) }
             };
         }
     }

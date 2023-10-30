@@ -1,5 +1,6 @@
 ﻿using Apps.MicrosoftTeams.DynamicHandlers;
 using Apps.MicrosoftTeams.Webhooks.Inputs;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
 using Newtonsoft.Json;
 
@@ -9,8 +10,8 @@ public class MessageSentToChannelWebhookHandler : BaseWebhookHandler
 {
     private const string SubscriptionEvent = "created";
     
-    public MessageSentToChannelWebhookHandler([WebhookParameter(true)] ChannelInput channel) 
-        : base(SubscriptionEvent, channel) { }
+    public MessageSentToChannelWebhookHandler(InvocationContext invocationContext, [WebhookParameter(true)] ChannelInput channel) 
+        : base(invocationContext, SubscriptionEvent, channel) { }
 
     protected override string GetResource()
     {

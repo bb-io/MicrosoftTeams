@@ -1,24 +1,26 @@
 ﻿using Apps.MicrosoftTeams.Webhooks.Inputs;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
 using Microsoft.Graph.Models;
 
 namespace Apps.MicrosoftTeams.Webhooks.Handlers;
 
-public abstract class BaseWebhookHandler : IWebhookEventHandler, IAsyncRenewableWebhookEventHandler
+public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, IAsyncRenewableWebhookEventHandler
 {
-    private const string BridgeWebhooksUrl = ApplicationConstants.BridgeServiceUrl + $"/webhooks/{ApplicationConstants.AppName}";
+    private string BridgeWebhooksUrl = ""; 
     
     private readonly string _subscriptionEvent;
     protected readonly IWebhookHandlerInput WebhookInput;
 
-    protected BaseWebhookHandler(string subscriptionEvent)
+    protected BaseWebhookHandler(InvocationContext invocationContext, string subscriptionEvent) : base(invocationContext)
     {
         _subscriptionEvent = subscriptionEvent;
+        BridgeWebhooksUrl = InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/') + $"/webhooks/{ApplicationConstants.AppName}";
     }
 
-    protected BaseWebhookHandler(string subscriptionEvent, [WebhookParameter(true)] IWebhookHandlerInput input) 
-        : this(subscriptionEvent)
+    protected BaseWebhookHandler(InvocationContext invocationContext, string subscriptionEvent, [WebhookParameter(true)] IWebhookHandlerInput input) : this(invocationContext, subscriptionEvent)
     {
         WebhookInput = input;
     }
@@ -42,7 +44,7 @@ public abstract class BaseWebhookHandler : IWebhookEventHandler, IAsyncRenewable
             });
         }
 
-        var bridgeService = new BridgeService();
+        var bridgeService = new BridgeService(InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/'));
         await bridgeService.Subscribe(values["payloadUrl"], subscription.Id, _subscriptionEvent);
     }
 
@@ -52,7 +54,7 @@ public abstract class BaseWebhookHandler : IWebhookEventHandler, IAsyncRenewable
         var client = new MSTeamsClient(authenticationCredentialsProviders);
         var subscription = await GetTargetSubscription(client);
         
-        var bridgeService = new BridgeService();
+        var bridgeService = new BridgeService(InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/'));
         var webhooksLeft = await bridgeService.Unsubscribe(values["payloadUrl"], subscription!.Id, _subscriptionEvent);
 
         if (webhooksLeft == 0)
