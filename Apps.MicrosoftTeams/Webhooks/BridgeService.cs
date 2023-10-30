@@ -9,9 +9,9 @@ public class BridgeService
     
     private readonly RestClient _bridgeClient;
 
-    public BridgeService()
+    public BridgeService(string bridgeServiceUrl)
     {
-        _bridgeClient = new RestClient(new RestClientOptions(ApplicationConstants.BridgeServiceUrl));
+        _bridgeClient = new RestClient(new RestClientOptions(bridgeServiceUrl));
     }
 
     public async Task Subscribe(string url, string id, string subscriptionEvent)
