@@ -162,11 +162,15 @@ public class ChannelActions : BaseInvocable
                 {
                     var attachmentFile = await UploadFile(input.AttachmentFile);
                     var attachmentId = attachmentFile.ETag.Split("{")[1].Split("}")[0];
+                    var webUrl = Path.GetExtension(attachmentFile.Name) == ".docx"
+                            ? attachmentFile.WebUrl.Split("&action")[0]
+                            : attachmentFile.WebUrl;
+
                     requestBody.Attachments.Add(new()
                     {
                         Id = attachmentId,
                         ContentType = "reference",
-                        ContentUrl = attachmentFile.WebUrl,
+                        ContentUrl = webUrl,
                         Name = attachmentFile.Name
                     });
                     requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
