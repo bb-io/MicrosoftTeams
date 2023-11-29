@@ -178,7 +178,7 @@ namespace Apps.MicrosoftTeams.Actions
                         {
                             Id = attachmentId,
                             ContentType = "reference",
-                            ContentUrl = oneDriveAttachmentFile.WebUrl,
+                            ContentUrl = oneDriveAttachmentFile.WebUrl?.Split('&').FirstOrDefault(),
                             Name = oneDriveAttachmentFile.Name
                         });
                         requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
@@ -192,7 +192,7 @@ namespace Apps.MicrosoftTeams.Actions
                         {
                             Id = attachmentId,
                             ContentType = "reference",
-                            ContentUrl = attachmentFile.WebUrl,
+                            ContentUrl = attachmentFile.WebUrl?.Split('&').FirstOrDefault(),
                             Name = attachmentFile.Name
                         });
                         requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
