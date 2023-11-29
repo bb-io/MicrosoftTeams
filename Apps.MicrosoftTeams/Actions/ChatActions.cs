@@ -178,7 +178,7 @@ namespace Apps.MicrosoftTeams.Actions
                         {
                             Id = attachmentId,
                             ContentType = "reference",
-                            ContentUrl = oneDriveAttachmentFile.WebUrl?.Split('&').FirstOrDefault(),
+                            ContentUrl = oneDriveAttachmentFile.WebUrl,
                             Name = oneDriveAttachmentFile.Name
                         });
                         requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
@@ -188,11 +188,15 @@ namespace Apps.MicrosoftTeams.Actions
                     {
                         var attachmentFile = await UploadFile(input.AttachmentFile);
                         var attachmentId = attachmentFile.ETag.Split("{")[1].Split("}")[0];
+                        var webUrl = Path.GetExtension(attachmentFile.Name) == ".docx"
+                            ? attachmentFile.WebUrl.Split("&action")[0]
+                            : attachmentFile.WebUrl; 
+                        
                         requestBody.Attachments.Add(new()
                         {
                             Id = attachmentId,
                             ContentType = "reference",
-                            ContentUrl = attachmentFile.WebUrl?.Split('&').FirstOrDefault(),
+                            ContentUrl = webUrl,
                             Name = attachmentFile.Name
                         });
                         requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
