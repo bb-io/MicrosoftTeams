@@ -1,13 +1,13 @@
-﻿using File = Blackbird.Applications.Sdk.Common.Files.File;
+﻿using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.MicrosoftTeams.Dtos;
 
 public class FileDto
 {
-    public FileDto(File file)
+    public FileDto(FileReference file)
     {
         File = file;
     }
     
-    public File File { get; set; }
+    public FileReference File { get; set; }
 }
