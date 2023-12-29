@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Product>Microsoft Teams</Product>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <Description>Microsoft Teams is a proprietary business communication platform developed by Microsoft, as part of the Microsoft 365 family of products</Description>
     <AssemblyName>Apps.MicrosoftTeams</AssemblyName>
   </PropertyGroup>
@@ -14,7 +14,6 @@
     <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.16" />
     <PackageReference Include="Microsoft.Graph" Version="5.14.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="RestSharp" Version="110.2.0" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup>

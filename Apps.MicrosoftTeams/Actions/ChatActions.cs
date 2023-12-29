@@ -230,6 +230,10 @@ namespace Apps.MicrosoftTeams.Actions
                 });
         
             var fileStream = await _fileManagementClient.DownloadAsync(file);
+            var fileMemoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(fileMemoryStream);
+            fileMemoryStream.Position = 0;
+            
             var uploadSessionRequestBody = new CreateUploadSessionPostRequestBody
             {
                 Item = new DriveItemUploadableProperties
@@ -245,7 +249,7 @@ namespace Apps.MicrosoftTeams.Actions
                 .CreateUploadSession.PostAsync(uploadSessionRequestBody);
 
             var fileUploadTask =
-                new LargeFileUploadTask<DriveItem>(uploadSession, fileStream, chunkSize, client.RequestAdapter);
+                new LargeFileUploadTask<DriveItem>(uploadSession, fileMemoryStream, chunkSize, client.RequestAdapter);
             var uploadResult = await fileUploadTask.UploadAsync();
             return uploadResult.ItemResponse;
         }
