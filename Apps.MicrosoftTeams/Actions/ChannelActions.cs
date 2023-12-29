@@ -16,6 +16,7 @@ using Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
 using Newtonsoft.Json;
+using RestSharp;
 
 namespace Apps.MicrosoftTeams.Actions;
 
@@ -205,6 +206,10 @@ public class ChannelActions : BaseInvocable
             });
         
         var fileStream = await _fileManagementClient.DownloadAsync(file);
+        var fileMemoryStream = new MemoryStream();
+        await fileStream.CopyToAsync(fileMemoryStream);
+        fileMemoryStream.Position = 0;
+        
         var uploadSessionRequestBody = new CreateUploadSessionPostRequestBody
         {
             Item = new DriveItemUploadableProperties
@@ -220,7 +225,7 @@ public class ChannelActions : BaseInvocable
             .CreateUploadSession.PostAsync(uploadSessionRequestBody);
 
         var fileUploadTask =
-            new LargeFileUploadTask<DriveItem>(uploadSession, fileStream, chunkSize, client.RequestAdapter);
+            new LargeFileUploadTask<DriveItem>(uploadSession, fileMemoryStream, chunkSize, client.RequestAdapter);
         var uploadResult = await fileUploadTask.UploadAsync();
         return uploadResult.ItemResponse;
     }
