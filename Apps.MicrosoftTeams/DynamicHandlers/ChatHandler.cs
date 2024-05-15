@@ -17,7 +17,7 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
 
             var allChats = new List<Chat>();
-            var top = 100;
+            var top = 50;
 
             var chats = await client.Me.Chats.GetAsync(requestConfiguration =>
             {
