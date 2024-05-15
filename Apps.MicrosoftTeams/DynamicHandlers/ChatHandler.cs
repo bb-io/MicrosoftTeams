@@ -35,7 +35,7 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                         requestConfiguration.QueryParameters.Skip = skip == 0 ? null : skip;
                     }, cancellationToken);
 
-                    if (chatsResponse?.Value == null || !chatsResponse.Value.Any() || chatsResponse.Value.Count < top)
+                    if (chatsResponse?.Value == null || chatsResponse.Value.Count == 0)
                     {
                         break;
                     }
