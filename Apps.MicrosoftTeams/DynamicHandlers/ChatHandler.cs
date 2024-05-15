@@ -24,7 +24,7 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                              $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
                 requestConfiguration.QueryParameters.Filter = filter;
                 requestConfiguration.QueryParameters.Orderby = new []{ "lastMessagePreview/createdDateTime desc" };
-                requestConfiguration.QueryParameters.Top = 50;
+                requestConfiguration.QueryParameters.Top = 10;
             }, cancellationToken);
 
             await logger.Log(new
