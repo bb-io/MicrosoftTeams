@@ -32,6 +32,20 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                 ChatsCount = chats.Value.Count,
             });
             
+            var pageIterator = PageIterator<Chat, ChatCollectionResponse>
+                .CreatePageIterator(
+                    client,
+                    chats,
+                    (msg) => true);
+
+            await pageIterator.IterateAsync(cancellationToken);
+            
+            await logger.Log(new
+            {
+                ChatsCount = chats.Value.Count,
+                Message = "After pagination"
+            });
+            
             return chats.Value
                 .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
                     ? v.ChatType == ChatType.OneOnOne 
