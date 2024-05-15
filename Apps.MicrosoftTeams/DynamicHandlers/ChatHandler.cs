@@ -4,6 +4,21 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions;
 
+/*
+                 var pageIterator = Microsoft.Graph.PageIterator<Chat, ChatCollectionResponse>.CreatePageIterator(client, chatsResponse, (m) =>
+                {
+                    count++;
+                    if (count < 1000)
+                    {
+                        return false;
+                    }
+                    
+                    return true;
+                });
+                
+                await pageIterator.IterateAsync(cancellationToken);
+ */
+
 namespace Apps.MicrosoftTeams.DynamicHandlers
 {
     public class ChatHandler(InvocationContext invocationContext)
@@ -18,11 +33,14 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             {
                 var contextInv = InvocationContext;
                 var client = new MSTeamsClient(contextInv.AuthenticationCredentialsProviders);
+                
+                var count = 0;
+                
                 var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
 
                 var allChats = new List<Chat>();
                 const int top = 50;
-
+                
                 var chatsResponse = await client.Me.Chats.GetAsync(requestConfiguration =>
                 {
                     requestConfiguration.QueryParameters.Expand = new[] { "members" };
@@ -32,19 +50,18 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                     requestConfiguration.QueryParameters.Filter = filter;
                     requestConfiguration.QueryParameters.Orderby =
                         new[] { "lastMessagePreview/createdDateTime desc" };
+                    requestConfiguration.QueryParameters.Count = true;
                     requestConfiguration.QueryParameters.Top = top;
                 }, cancellationToken);
                 
-                await logger.Log(new
-                {
-                    Message = "Getting chats",
-                    Iteration = iteration,
-                    Chats = chatsResponse?.Value
-                });
+                var nextPageLink = chatsResponse?.OdataNextLink;
 
                 while (true)
                 {
-                    var nextPageLink = chatsResponse?.OdataNextLink;
+                    if (iteration > 5)
+                    {
+                        break;
+                    }
                     
                     await logger.Log(new
                     {
@@ -61,7 +78,7 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                     var nextPageRequestInformation = new RequestInformation
                     {
                         HttpMethod = Method.GET,
-                        UrlTemplate = nextPageLink
+                        UrlTemplate = nextPageLink,
                     };
 
                     var nextPageResult = await client.RequestAdapter.SendAsync(nextPageRequestInformation,
@@ -74,6 +91,8 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
 
                     iteration++;
                     allChats.AddRange(nextPageResult?.Value ?? Enumerable.Empty<Chat>());
+                    
+                    nextPageLink = nextPageResult?.OdataNextLink;
                     
                     await logger.Log(new 
                     {
