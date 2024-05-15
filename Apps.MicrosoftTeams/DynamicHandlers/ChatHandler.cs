@@ -30,42 +30,29 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             var contextInv = InvocationContext;
             var client = new MSTeamsClient(contextInv.AuthenticationCredentialsProviders);
             var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
-
-            var chatsResponse = new ChatCollectionResponse() { Value = new List<Chat>() };
-            var count = 0;
-            var logger = new Logger();
-            var pageIterator = Microsoft.Graph.PageIterator<Chat, ChatCollectionResponse>.CreatePageIterator(client, chatsResponse, async (m) =>
+            var chats = await client.Me.Chats.GetAsync(requestConfiguration =>
             {
-                count++;
+                requestConfiguration.QueryParameters.Expand = new[] { "members" };
+                var filter = $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
+                             $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
+                requestConfiguration.QueryParameters.Filter = filter;
+                requestConfiguration.QueryParameters.Orderby = new []{ "lastMessagePreview/createdDateTime desc" };
+                requestConfiguration.QueryParameters.Top = 50;
+                requestConfiguration.QueryParameters.Count = true;
+            }, cancellationToken);
 
-                await logger.Log(new
-                {
-                    Count = count,
-                    Chat = m
-                });
-                
-                if (count < 50)
-                {
-                    return false;
-                }
-                
-                if(m != null)
-                {
-                    chatsResponse.Value?.Add(m);
-                    return true;
-                }
-                
-                return false;
-            });
+            var nextLink = chats.OdataNextLink;
+            var count = chats.OdataCount;
 
-            await pageIterator.IterateAsync(cancellationToken);
-            
+            var logger = new Logger();
             await logger.Log(new
             {
-                Chats = chatsResponse
+                NextLink = nextLink,
+                OdataCount = count,
+                RealCount = chats.Value.Count
             });
             
-            return chatsResponse.Value
+            return chats.Value
                 .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
                     ? v.ChatType == ChatType.OneOnOne 
                         ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)?.DisplayName ?? "Unknown user"
