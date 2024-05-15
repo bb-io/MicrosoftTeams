@@ -20,24 +20,33 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
 
             while (true)
             {
-                var chatsResponse = await client.Me.Chats.GetAsync(requestConfiguration =>
+                try
                 {
-                    requestConfiguration.QueryParameters.Expand = new[] { "members" };
-                    var filter = $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
-                                 $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
-                    requestConfiguration.QueryParameters.Filter = filter;
-                    requestConfiguration.QueryParameters.Orderby = new[] { "lastMessagePreview/createdDateTime desc" };
-                    requestConfiguration.QueryParameters.Top = top;
-                    requestConfiguration.QueryParameters.Skip = skip;
-                }, cancellationToken);
+                    var chatsResponse = await client.Me.Chats.GetAsync(requestConfiguration =>
+                    {
+                        requestConfiguration.QueryParameters.Expand = new[] { "members" };
+                        var filter =
+                            $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
+                            $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
+                        requestConfiguration.QueryParameters.Filter = filter;
+                        requestConfiguration.QueryParameters.Orderby =
+                            new[] { "lastMessagePreview/createdDateTime desc" };
+                        requestConfiguration.QueryParameters.Top = top;
+                        requestConfiguration.QueryParameters.Skip = skip == 0 ? null : skip;
+                    }, cancellationToken);
 
-                if (chatsResponse?.Value == null || !chatsResponse.Value.Any())
-                {
-                    break;
+                    if (chatsResponse?.Value == null || !chatsResponse.Value.Any())
+                    {
+                        break;
+                    }
+
+                    allChats.AddRange(chatsResponse.Value);
+                    skip += top;
                 }
-
-                allChats.AddRange(chatsResponse.Value);
-                skip += top;
+                catch (Exception e)
+                {
+                    throw new Exception($"Failed to get chats, Exception type: {e.GetType().Name}, Message: {e.Message}");
+                }
             }
 
             return allChats
