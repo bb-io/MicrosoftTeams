@@ -32,21 +32,28 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                 ChatsCount = chats.Value.Count,
             });
             
+            var chatsDtos = new List<Chat>();
             var pageIterator = PageIterator<Chat, ChatCollectionResponse>
                 .CreatePageIterator(
                     client,
                     chats,
-                    (msg) => true);
+                    (chat) =>
+                    {
+                        chatsDtos.Add(chat);
+                        return true;
+                    });
+            
+            chatsDtos.AddRange(chats.Value);
 
             await pageIterator.IterateAsync(cancellationToken);
             
             await logger.Log(new
             {
-                ChatsCount = chats.Value.Count,
+                ChatsCount = chatsDtos.Count,
                 Message = "After pagination"
             });
             
-            return chats.Value
+            return chatsDtos
                 .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
                     ? v.ChatType == ChatType.OneOnOne 
                         ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)?.DisplayName ?? "Unknown user"

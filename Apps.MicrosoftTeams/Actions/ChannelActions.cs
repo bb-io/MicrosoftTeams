@@ -74,7 +74,7 @@ public class ChannelActions : BaseInvocable
                 var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
                 var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
                 var fileContentStream = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
-                var file = await _fileManagementClient.UploadAsync(fileContentStream, fileData.FileObject.MimeType,
+                var file = await _fileManagementClient.UploadAsync(fileContentStream, fileData.File.MimeType,
                     fileData.Name);
                 resultFiles.Add(file);
             }
