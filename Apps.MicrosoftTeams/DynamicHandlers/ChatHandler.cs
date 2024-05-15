@@ -3,22 +3,6 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using Microsoft.Kiota.Abstractions;
-
-/*
-                 var pageIterator = Microsoft.Graph.PageIterator<Chat, ChatCollectionResponse>.CreatePageIterator(client, chatsResponse, (m) =>
-                {
-                    count++;
-                    if (count < 1000)
-                    {
-                        return false;
-                    }
-
-                    return true;
-                });
-
-                await pageIterator.IterateAsync(cancellationToken);
- */
 
 namespace Apps.MicrosoftTeams.DynamicHandlers
 {
@@ -29,50 +13,26 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             CancellationToken cancellationToken)
         {
             var logger = new Logger();
+            
             var contextInv = InvocationContext;
             var client = new MSTeamsClient(contextInv.AuthenticationCredentialsProviders);
             var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
-
-            var chatsResponse = new ChatCollectionResponse() { Value = new List<Chat>() };
-            var count = 0;
-            var pageIterator = Microsoft.Graph.PageIterator<Chat, ChatCollectionResponse>.CreatePageIterator(client, chatsResponse, async (m) =>
+            var chats = await client.Me.Chats.GetAsync(requestConfiguration =>
             {
-                count++;
+                requestConfiguration.QueryParameters.Expand = new[] { "members" };
+                var filter = $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
+                             $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
+                requestConfiguration.QueryParameters.Filter = filter;
+                requestConfiguration.QueryParameters.Orderby = new []{ "lastMessagePreview/createdDateTime desc" };
+                requestConfiguration.QueryParameters.Top = 100;
+            }, cancellationToken);
 
-                if (count > 100)
-                {
-                    return false;
-                }
-
-                await logger.Log(new
-                {
-                    Iteration = count,
-                    chatId = m
-                });
-                
-                if(m != null)
-                {
-                    return true;
-                }
-                
-                return false;
+            await logger.Log(new
+            {
+                ChatsCount = chats.Value.Count,
             });
-
-            while (pageIterator.State != PagingState.Complete)
-            {
-                count = 0;
-                
-                if(pageIterator.State == PagingState.NotStarted)
-                {
-                    await pageIterator.IterateAsync(cancellationToken);
-                }
-                else
-                {
-                    await pageIterator.ResumeAsync(cancellationToken);                
-                }
-            }
             
-            return chatsResponse.Value
+            return chats.Value
                 .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
                     ? v.ChatType == ChatType.OneOnOne 
                         ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)?.DisplayName ?? "Unknown user"
