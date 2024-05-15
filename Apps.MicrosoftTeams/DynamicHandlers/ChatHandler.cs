@@ -2,6 +2,7 @@
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Microsoft.Graph.Models;
+using Microsoft.Kiota.Http.HttpClientLibrary;
 
 namespace Apps.MicrosoftTeams.DynamicHandlers
 {
@@ -24,12 +25,13 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                              $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
                 requestConfiguration.QueryParameters.Filter = filter;
                 requestConfiguration.QueryParameters.Orderby = new []{ "lastMessagePreview/createdDateTime desc" };
+                requestConfiguration.QueryParameters.Top = 50;
             }, cancellationToken);
             
             return chats.Value
                 .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
                     ? v.ChatType == ChatType.OneOnOne 
-                        ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)?.DisplayName ?? "Unknown user"
+                        ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)?.DisplayName ?? "Unknown user" 
                         : string.Join(", ", v.Members.Where(m => ((AadUserConversationMember)m).UserId != me.Id)
                             .Select(m => m.DisplayName)) 
                     : v.Topic);
