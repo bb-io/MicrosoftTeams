@@ -49,7 +49,12 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                     };
 
                     var nextPageResult = await client.RequestAdapter.SendAsync(nextPageRequestInformation, (parseNode) => new ChatCollectionResponse(), cancellationToken: cancellationToken);
-
+                    
+                    if(nextPageResult == null || nextPageResult.Value == null || !nextPageResult.Value.Any())
+                    {
+                        break;
+                    }
+                    
                     iteration++;
                     allChats.AddRange(nextPageResult?.Value ?? Enumerable.Empty<Chat>());
                 }
