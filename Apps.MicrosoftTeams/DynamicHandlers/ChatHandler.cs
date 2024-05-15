@@ -2,6 +2,7 @@
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Microsoft.Graph.Models;
+using Microsoft.Kiota.Abstractions;
 
 namespace Apps.MicrosoftTeams.DynamicHandlers
 {
@@ -15,37 +16,46 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
 
             var allChats = new List<Chat>();
-            int skip = 0;
             const int top = 50;
+            
+            var chatsResponse = await client.Me.Chats.GetAsync(requestConfiguration =>
+            {
+                requestConfiguration.QueryParameters.Expand = new[] { "members" };
+                var filter =
+                    $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
+                    $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
+                requestConfiguration.QueryParameters.Filter = filter;
+                requestConfiguration.QueryParameters.Orderby =
+                    new[] { "lastMessagePreview/createdDateTime desc" };
+                requestConfiguration.QueryParameters.Top = top;
+            }, cancellationToken);
+            
+            var iteration = 0;
 
             while (true)
             {
                 try
                 {
-                    var chatsResponse = await client.Me.Chats.GetAsync(requestConfiguration =>
-                    {
-                        requestConfiguration.QueryParameters.Expand = new[] { "members" };
-                        var filter =
-                            $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
-                            $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
-                        requestConfiguration.QueryParameters.Filter = filter;
-                        requestConfiguration.QueryParameters.Orderby =
-                            new[] { "lastMessagePreview/createdDateTime desc" };
-                        requestConfiguration.QueryParameters.Top = top;
-                        requestConfiguration.QueryParameters.Skip = skip == 0 ? null : skip;
-                    }, cancellationToken);
-
-                    if (chatsResponse?.Value == null || chatsResponse.Value.Count == 0)
+                    var nextPageLink = chatsResponse?.OdataNextLink;
+                    if(string.IsNullOrEmpty(nextPageLink))
                     {
                         break;
                     }
+                    
+                    var nextPageRequestInformation = new RequestInformation
+                    {
+                        HttpMethod = Method.GET,
+                        UrlTemplate = nextPageLink
+                    };
 
-                    allChats.AddRange(chatsResponse.Value);
-                    skip += top;
+                    var nextPageResult = await client.RequestAdapter.SendAsync(nextPageRequestInformation, (parseNode) => new ChatCollectionResponse(), cancellationToken: cancellationToken);
+
+                    iteration++;
+                    allChats.AddRange(nextPageResult?.Value ?? Enumerable.Empty<Chat>());
                 }
                 catch (Exception e)
                 {
-                    throw new Exception($"Failed to get chats, Exception type: {e.GetType().Name}, Message: {e.Message}");
+                    throw new Exception($"Failed to get chats, Exception type: {e.GetType().Name}, Message: {e.Message}; Iteration: {iteration}");
                 }
             }
 
