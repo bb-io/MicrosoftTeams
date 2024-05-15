@@ -12,10 +12,10 @@ using Microsoft.Kiota.Abstractions;
                     {
                         return false;
                     }
-                    
+
                     return true;
                 });
-                
+
                 await pageIterator.IterateAsync(cancellationToken);
  */
 
@@ -24,56 +24,44 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
     public class ChatHandler(InvocationContext invocationContext)
         : BaseInvocable(invocationContext), IAsyncDataSourceHandler
     {
-        public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
-        {               
+        public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
+            CancellationToken cancellationToken)
+        {
             var logger = new Logger();
             var iteration = 0;
+            const int maxIterations = 5;
+            const int top = 50;
 
             try
             {
                 var contextInv = InvocationContext;
                 var client = new MSTeamsClient(contextInv.AuthenticationCredentialsProviders);
-                
-                var count = 0;
-                
-                var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
 
+                var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
                 var allChats = new List<Chat>();
-                const int top = 50;
-                
+
+                var filter = $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
+                             $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
+
                 var chatsResponse = await client.Me.Chats.GetAsync(requestConfiguration =>
                 {
                     requestConfiguration.QueryParameters.Expand = new[] { "members" };
-                    var filter =
-                        $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
-                        $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
                     requestConfiguration.QueryParameters.Filter = filter;
-                    requestConfiguration.QueryParameters.Orderby =
-                        new[] { "lastMessagePreview/createdDateTime desc" };
+                    requestConfiguration.QueryParameters.Orderby = new[] { "lastMessagePreview/createdDateTime desc" };
                     requestConfiguration.QueryParameters.Count = true;
                     requestConfiguration.QueryParameters.Top = top;
                 }, cancellationToken);
-                
+
                 var nextPageLink = chatsResponse?.OdataNextLink;
 
-                while (true)
+                while (!string.IsNullOrEmpty(nextPageLink) && iteration < maxIterations)
                 {
-                    if (iteration > 5)
-                    {
-                        break;
-                    }
-                    
                     await logger.Log(new
                     {
                         Message = "Getting next page",
                         Iteration = iteration,
                         NextPageLink = nextPageLink
                     });
-                    
-                    if (string.IsNullOrEmpty(nextPageLink))
-                    {
-                        break;
-                    }
 
                     var nextPageRequestInformation = new RequestInformation
                     {
@@ -82,34 +70,34 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                     };
 
                     var nextPageResult = await client.RequestAdapter.SendAsync(nextPageRequestInformation,
-                        (parseNode) => new ChatCollectionResponse(), cancellationToken: cancellationToken);
+                        parseNode => new ChatCollectionResponse(), cancellationToken: cancellationToken);
 
-                    if (nextPageResult == null || nextPageResult.Value == null || !nextPageResult.Value.Any())
+                    if (nextPageResult?.Value == null || !nextPageResult.Value.Any())
                     {
                         break;
                     }
 
+                    allChats.AddRange(nextPageResult.Value);
+
+                    nextPageLink = nextPageResult.OdataNextLink;
                     iteration++;
-                    allChats.AddRange(nextPageResult?.Value ?? Enumerable.Empty<Chat>());
-                    
-                    nextPageLink = nextPageResult?.OdataNextLink;
-                    
-                    await logger.Log(new 
+
+                    await logger.Log(new
                     {
                         Message = "Got next page",
                         Iteration = iteration,
-                        NextPageResult = nextPageResult?.Value
+                        NextPageResult = nextPageResult.Value
                     });
                 }
 
-                return allChats
-                    .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic)
-                        ? v.ChatType == ChatType.OneOnOne
-                            ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)
-                                ?.DisplayName ?? "Unknown user"
-                            : string.Join(", ", v.Members.Where(m => ((AadUserConversationMember)m).UserId != me.Id)
+                return allChats.ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic)
+                    ? v.ChatType == ChatType.OneOnOne
+                        ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)?.DisplayName ??
+                          "Unknown user"
+                        : string.Join(", ",
+                            v.Members.Where(m => ((AadUserConversationMember)m).UserId != me.Id)
                                 .Select(m => m.DisplayName))
-                        : v.Topic);
+                    : v.Topic);
             }
             catch (Exception e)
             {
@@ -121,8 +109,10 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                     Iteration = iteration,
                     StackTrace = e.StackTrace
                 });
-                
-                throw new Exception($"Failed to get chats, Exception type: {e.GetType().Name}, Message: {e.Message}; Iteration: {iteration}");
+
+                throw new Exception(
+                    $"Failed to get chats, Exception type: {e.GetType().Name}, Message: {e.Message}; Iteration: {iteration}",
+                    e);
             }
         }
     }
