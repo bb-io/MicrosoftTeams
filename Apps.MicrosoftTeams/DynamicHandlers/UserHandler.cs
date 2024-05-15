@@ -4,12 +4,9 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.MicrosoftTeams.DynamicHandlers
 {
-    public class UserHandler : BaseInvocable, IAsyncDataSourceHandler
+    public class UserHandler(InvocationContext invocationContext)
+        : BaseInvocable(invocationContext), IAsyncDataSourceHandler
     {
-        public UserHandler(InvocationContext invocationContext) : base(invocationContext)
-        {
-        }
-
         public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, 
             CancellationToken cancellationToken)
         {
