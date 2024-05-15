@@ -33,9 +33,16 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
 
             var chatsResponse = new ChatCollectionResponse() { Value = new List<Chat>() };
             var count = 0;
-            var pageIterator = Microsoft.Graph.PageIterator<Chat, ChatCollectionResponse>.CreatePageIterator(client, chatsResponse, (m) =>
+            var logger = new Logger();
+            var pageIterator = Microsoft.Graph.PageIterator<Chat, ChatCollectionResponse>.CreatePageIterator(client, chatsResponse, async (m) =>
             {
                 count++;
+
+                await logger.Log(new
+                {
+                    Count = count,
+                    Chat = m
+                });
                 
                 if (count < 50)
                 {
@@ -52,6 +59,11 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             });
 
             await pageIterator.IterateAsync(cancellationToken);
+            
+            await logger.Log(new
+            {
+                Chats = chatsResponse
+            });
             
             return chatsResponse.Value
                 .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
