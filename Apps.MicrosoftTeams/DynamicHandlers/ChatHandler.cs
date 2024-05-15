@@ -37,14 +37,17 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                 .CreatePageIterator(
                     client,
                     chats,
-                    (chat) =>
+                    async (chat) =>
                     {
+                        await logger.Log(new
+                        {
+                            ChatId = chat.Id
+                        });
+                        
                         chatsDtos.Add(chat);
                         return true;
                     });
             
-            chatsDtos.AddRange(chats.Value);
-
             await pageIterator.IterateAsync(cancellationToken);
             
             await logger.Log(new
@@ -53,6 +56,8 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                 Message = "After pagination"
             });
             
+            chatsDtos.AddRange(chats.Value);
+
             return chatsDtos
                 .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
                     ? v.ChatType == ChatType.OneOnOne 
