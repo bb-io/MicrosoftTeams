@@ -9,62 +9,52 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
     public class ChatHandler(InvocationContext invocationContext)
         : BaseInvocable(invocationContext), IAsyncDataSourceHandler
     {
-        public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, 
-            CancellationToken cancellationToken)
+        public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
             var logger = new Logger();
-            
             var contextInv = InvocationContext;
             var client = new MSTeamsClient(contextInv.AuthenticationCredentialsProviders);
             var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
+
+            var allChats = new List<Chat>();
+            var top = 10;
+
             var chats = await client.Me.Chats.GetAsync(requestConfiguration =>
             {
                 requestConfiguration.QueryParameters.Expand = new[] { "members" };
                 var filter = $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
                              $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
                 requestConfiguration.QueryParameters.Filter = filter;
-                requestConfiguration.QueryParameters.Orderby = new []{ "lastMessagePreview/createdDateTime desc" };
-                requestConfiguration.QueryParameters.Top = 10;
+                requestConfiguration.QueryParameters.Orderby = new[] { "lastMessagePreview/createdDateTime desc" };
+                requestConfiguration.QueryParameters.Top = top;
             }, cancellationToken);
 
-            await logger.Log(new
+            while (chats?.Value != null)
             {
-                ChatsCount = chats.Value.Count,
-            });
-            
-            var chatsDtos = new List<Chat>();
-            var pageIterator = PageIterator<Chat, ChatCollectionResponse>
-                .CreatePageIterator(
-                    client,
-                    chats,
-                    async (chat) =>
-                    {
-                        await logger.Log(new
-                        {
-                            ChatId = chat.Id
-                        });
-                        
-                        chatsDtos.Add(chat);
-                        return true;
-                    });
-            
-            await pageIterator.IterateAsync(cancellationToken);
-            
-            await logger.Log(new
-            {
-                ChatsCount = chatsDtos.Count,
-                Message = "After pagination"
-            });
-            
-            chatsDtos.AddRange(chats.Value);
+                allChats.AddRange(chats.Value);
 
-            return chatsDtos
-                .ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic) 
-                    ? v.ChatType == ChatType.OneOnOne 
-                        ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)?.DisplayName ?? "Unknown user"
-                        : string.Join(", ", v.Members.Where(m => ((AadUserConversationMember)m).UserId != me.Id)
-                            .Select(m => m.DisplayName)) 
-                    : v.Topic);
+                await logger.Log(new
+                {
+                    ChatsCount = chats.Value.Count,
+                });
+
+                if (!string.IsNullOrEmpty(chats.OdataNextLink))
+                {
+                    chats = await client.Me.Chats
+                        .WithUrl(chats.OdataNextLink)
+                        .GetAsync(cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return allChats.ToDictionary(k => k.Id, v => string.IsNullOrEmpty(v.Topic)
+                ? v.ChatType == ChatType.OneOnOne
+                    ? v.Members.FirstOrDefault(m => ((AadUserConversationMember)m).UserId != me.Id)?.DisplayName ?? "Unknown user"
+                    : string.Join(", ", v.Members.Where(m => ((AadUserConversationMember)m).UserId != me.Id).Select(m => m.DisplayName))
+                : v.Topic);
         }
     }
 }
