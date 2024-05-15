@@ -5,12 +5,9 @@ using Microsoft.Graph.Models;
 
 namespace Apps.MicrosoftTeams.DynamicHandlers;
 
-public class OneDriveFileHandler : BaseInvocable, IAsyncDataSourceHandler
+public class OneDriveFileHandler(InvocationContext invocationContext)
+    : BaseInvocable(invocationContext), IAsyncDataSourceHandler
 {
-    public OneDriveFileHandler(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
         CancellationToken cancellationToken)
     {

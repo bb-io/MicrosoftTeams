@@ -5,12 +5,9 @@ using Newtonsoft.Json;
 
 namespace Apps.MicrosoftTeams.DynamicHandlers;
 
-public class ChannelHandler : BaseInvocable, IAsyncDataSourceHandler
+public class ChannelHandler(InvocationContext invocationContext)
+    : BaseInvocable(invocationContext), IAsyncDataSourceHandler
 {
-    public ChannelHandler(InvocationContext invocationContext) : base(invocationContext)
-    {    
-    }
-
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, 
         CancellationToken cancellationToken)
     {
