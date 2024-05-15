@@ -17,7 +17,7 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
 
             var allChats = new List<Chat>();
-            var top = 10;
+            var top = 50;
 
             var chats = await client.Me.Chats.GetAsync(requestConfiguration =>
             {
@@ -29,7 +29,8 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                 requestConfiguration.QueryParameters.Top = top;
             }, cancellationToken);
 
-            while (chats?.Value != null)
+            var maxIterations = 10;
+            while (chats?.Value != null && maxIterations > 0)
             {
                 allChats.AddRange(chats.Value);
 
@@ -43,6 +44,7 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
                     chats = await client.Me.Chats
                         .WithUrl(chats.OdataNextLink)
                         .GetAsync(cancellationToken: cancellationToken);
+                    maxIterations--;
                 }
                 else
                 {
