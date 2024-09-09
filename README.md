@@ -6,7 +6,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-Microsoft Teams is a collaborative communication platform that combines chat, video conferencing and file sharing, providing a centralized hub for teams to work together seamlessly. It enables organizations to connect, collaborate, and communicate efficiently, whether in remote or office settings.
+Microsoft 365 Teams is a collaborative communication platform that combines chat, video conferencing and file sharing, providing a centralized hub for teams to work together seamlessly. It enables organizations to connect, collaborate, and communicate efficiently, whether in remote or office settings.
 
 ## Before setting up
 
@@ -42,7 +42,7 @@ The second way is to configure admin consent workflow:
 
 ## Connecting
 
-1. Navigate to apps and search for Microsoft Teams. If you cannot find Microsoft Teams then click _Add App_ in the top right corner, select Microsoft Teams and add the app to your Blackbird environment.
+1. Navigate to apps and search for Microsoft 365 Teams.
 2. Click _Add Connection_.
 3. Name your connection for future reference e.g. 'My organization'.
 4. Under _Channel messages scope required_ specify _Yes_ if you want to use webhooks and/or actions for channel messages and _No_ if not. Different scopes are added to authorization request based on the value of this connection parameter.
