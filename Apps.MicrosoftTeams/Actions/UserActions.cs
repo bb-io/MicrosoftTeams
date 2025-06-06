@@ -85,4 +85,7 @@ public class UserActions : BaseInvocable
             throw new Exception(error.Error.Message);
         }
     }
+
+    [Action("Debug", Description = "Debug")]
+    public List<AuthenticationCredentialsProvider> GetAuthenticationCredentialsProviders(){return InvocationContext.AuthenticationCredentialsProviders.ToList();}
 }
