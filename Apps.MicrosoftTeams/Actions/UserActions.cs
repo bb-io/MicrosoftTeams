@@ -6,6 +6,7 @@ using Apps.MicrosoftTeams.Models.Identifiers;
 using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Microsoft.Graph.Models.ODataErrors;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams.Actions;
 
@@ -31,7 +32,11 @@ public class UserActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
 
@@ -47,7 +52,11 @@ public class UserActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
 
@@ -63,7 +72,11 @@ public class UserActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
 
@@ -82,7 +95,11 @@ public class UserActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
 

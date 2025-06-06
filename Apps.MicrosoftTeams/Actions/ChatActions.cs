@@ -5,6 +5,7 @@ using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -72,7 +73,11 @@ public class ChatActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
 
@@ -89,7 +94,11 @@ public class ChatActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
         
@@ -122,7 +131,11 @@ public class ChatActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
 
@@ -142,8 +155,12 @@ public class ChatActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
-        } 
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
+        }
     }
 
     [Action("Send message to chat", Description = "Send message to chat")]
@@ -160,7 +177,11 @@ public class ChatActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
 
@@ -176,7 +197,11 @@ public class ChatActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
         
@@ -235,7 +260,11 @@ public class ChatActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
         

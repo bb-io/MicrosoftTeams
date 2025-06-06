@@ -17,6 +17,7 @@ using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
 using Newtonsoft.Json;
 using RestSharp;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams.Actions;
 
@@ -103,7 +104,7 @@ public class ChannelActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
         }
     }
     
@@ -123,7 +124,7 @@ public class ChannelActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
         }
     }
 
@@ -182,7 +183,7 @@ public class ChannelActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
         }
     } 
     
