@@ -49,7 +49,11 @@ public class ChannelActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
     
@@ -84,7 +88,11 @@ public class ChannelActions : BaseInvocable
         }
         catch (ODataError error)
         {
-            throw new Exception(error.Error.Message);
+            throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
     
@@ -106,6 +114,10 @@ public class ChannelActions : BaseInvocable
         {
             throw new PluginApplicationException(error.Error.Message);
         }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
+        }
     }
     
     [Action("Reply to message in channel", Description = "Reply to message in channel")]
@@ -125,6 +137,10 @@ public class ChannelActions : BaseInvocable
         catch (ODataError error)
         {
             throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
 
@@ -184,6 +200,10 @@ public class ChannelActions : BaseInvocable
         catch (ODataError error)
         {
             throw new PluginApplicationException(error.Error.Message);
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     } 
     
