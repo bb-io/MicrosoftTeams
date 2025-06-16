@@ -12,10 +12,12 @@ public class ConnectionDefinition : IConnectionDefinition
         {
             Name = "OAuth",
             AuthenticationType = ConnectionAuthenticationType.OAuth2,
-            ConnectionUsage = ConnectionUsage.Actions,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new("AdminPermissionRequired") { DisplayName = "Channel messages scope required" }
+                new("AdminPermissionRequired")
+                {
+                    DisplayName = "Channel messages scope required"
+                }
             }
         }
     };
@@ -24,10 +26,6 @@ public class ConnectionDefinition : IConnectionDefinition
         Dictionary<string, string> values)
     {
         var token = values.First(v => v.Key == "access_token");
-        yield return new AuthenticationCredentialsProvider(
-            AuthenticationCredentialsRequestLocation.None,
-            "Authorization",
-            $"{token.Value}"
-        );
+        yield return new AuthenticationCredentialsProvider("Authorization", $"{token.Value}");
     }
 }
