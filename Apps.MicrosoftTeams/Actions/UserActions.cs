@@ -11,15 +11,10 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 namespace Apps.MicrosoftTeams.Actions;
 
 [ActionList]
-public class UserActions : BaseInvocable
+public class UserActions(InvocationContext invocationContext) : BaseInvocable(invocationContext)
 {
-    private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders;
+    private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
 
-    public UserActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-        _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
-    }
-        
     [Action("Get my user information", Description = "Get my user information")]
     public async Task<UserDto> GetMe()
     {

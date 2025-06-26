@@ -22,17 +22,10 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 namespace Apps.MicrosoftTeams.Actions;
 
 [ActionList]
-public class ChannelActions : BaseInvocable
+public class ChannelActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseInvocable(invocationContext)
 {
-    private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders;
-    private readonly IFileManagementClient _fileManagementClient;
-
-    public ChannelActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
-        : base(invocationContext)
-    {
-        _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
-        _fileManagementClient = fileManagementClient;
-    }
+    private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
+    private readonly IFileManagementClient _fileManagementClient = fileManagementClient;
 
     [Action("Get channel message", Description = "Get channel message")]
     public async Task<ChannelMessageDto> GetChannelMessage([ActionParameter] ChannelIdentifier channelIdentifier, 
