@@ -21,23 +21,36 @@ public class BaseWebhookList : BaseInvocable
     protected async Task<WebhookResponse<T>> HandleWebhookRequest<T>(WebhookRequest request,
         ItemGetter<T> itemGetter) where T: class
     {
-        var eventPayload = JsonConvert.DeserializeObject<EventPayload>(request.Body.ToString(), new JsonSerializerSettings
+        var payload = request.Body.ToString();
+        try
         {
-            MissingMemberHandling = MissingMemberHandling.Ignore
-        });
-        var item = await itemGetter.GetItem(eventPayload);
-        
-        if (item is null)
+            var eventPayload = JsonConvert.DeserializeObject<EventPayload>(payload!, new JsonSerializerSettings
+            {
+                MissingMemberHandling = MissingMemberHandling.Ignore
+            });
+
+            var item = await itemGetter.GetItem(eventPayload);
+
+            if (item is null)
+                return new WebhookResponse<T>
+                {
+                    HttpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK),
+                    ReceivedWebhookRequestType = WebhookRequestType.Preflight
+                };
+
             return new WebhookResponse<T>
             {
                 HttpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK),
-                ReceivedWebhookRequestType = WebhookRequestType.Preflight
+                Result = item
             };
-
-        return new WebhookResponse<T>
+        }
+        catch (Exception ex)
         {
-            HttpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK),
-            Result = item
-        };
+            InvocationContext.Logger?.LogError(
+                $"[MicrosoftTeamsHandleWebhookRequest] Error processing webhook request: {ex.Message}. Request payload: {payload}",
+                []);
+
+            throw;
+        }
     }
 }
