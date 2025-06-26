@@ -1,4 +1,5 @@
-﻿using Blackbird.Applications.Sdk.Common.Authentication;
+﻿using Apps.MicrosoftTeams.Constants;
+using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 
 namespace Apps.MicrosoftTeams.Connections;
@@ -14,9 +15,14 @@ public class ConnectionDefinition : IConnectionDefinition
             AuthenticationType = ConnectionAuthenticationType.OAuth2,
             ConnectionProperties = new List<ConnectionProperty>
             {
-                new("AdminPermissionRequired")
+                new(CredNames.AdminPermissionRequired)
                 {
-                    DisplayName = "Channel messages scope required"
+                    DisplayName = "Channel messages scope required",
+                    DataItems = 
+                    [
+                        new("yes", "Yes"),
+                        new("no", "No")
+                    ]
                 }
             }
         }

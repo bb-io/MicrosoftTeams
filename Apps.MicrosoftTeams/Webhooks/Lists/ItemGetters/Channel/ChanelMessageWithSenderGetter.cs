@@ -24,7 +24,9 @@ public class ChannelMessageWithSenderGetter : ItemGetter<ChannelMessageDto>
         var message = await client.Teams[teamId].Channels[channelId].Messages[eventPayload.ResourceData.Id].GetAsync();
 
         if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
+        {
             return null;
+        }
         
         return new ChannelMessageDto(message);
     }

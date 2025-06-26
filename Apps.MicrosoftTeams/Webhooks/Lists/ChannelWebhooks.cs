@@ -8,10 +8,8 @@ using Blackbird.Applications.Sdk.Common.Webhooks;
 namespace Apps.MicrosoftTeams.Webhooks.Lists;
 
 [WebhookList]
-public class ChannelWebhooks : BaseWebhookList
+public class ChannelWebhooks(InvocationContext invocationContext) : BaseWebhookList(invocationContext)
 {
-    public ChannelWebhooks(InvocationContext invocationContext) : base(invocationContext) { }
-    
     [Webhook("On message sent to channel", typeof(MessageSentToChannelWebhookHandler), 
         Description = "This webhook is triggered when a message is sent to the channel.")]
     public async Task<WebhookResponse<ChannelMessageDto>> OnMessageSent(WebhookRequest request,
