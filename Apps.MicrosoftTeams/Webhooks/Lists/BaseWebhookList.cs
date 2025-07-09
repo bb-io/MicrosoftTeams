@@ -20,8 +20,13 @@ public class BaseWebhookList : BaseInvocable
     
     protected async Task<WebhookResponse<T>> HandleWebhookRequest<T>(WebhookRequest request,
         ItemGetter<T> itemGetter) where T: class
-    {
+    {       
         var payload = request.Body.ToString();
+
+        InvocationContext.Logger?.LogError(
+            $"[MicrosoftTeamsHandleWebhookRequest] Received payload from server, request payload: {payload}; Bird info: {InvocationContext.Bird?.Id}" +
+            $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}",  []);
+
         try
         {
             var eventPayload = JsonConvert.DeserializeObject<EventPayload>(payload!, new JsonSerializerSettings
@@ -47,7 +52,8 @@ public class BaseWebhookList : BaseInvocable
         catch (Exception ex)
         {
             InvocationContext.Logger?.LogError(
-                $"[MicrosoftTeamsHandleWebhookRequest] Error processing webhook request: {ex.Message}. Request payload: {payload}",
+                $"[MicrosoftTeamsHandleWebhookRequest] Error processing webhook request: {ex.Message}. Request payload: {payload}; ; Bird info: {InvocationContext.Bird?.Id}" +
+                $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}",
                 []);
 
             throw;
