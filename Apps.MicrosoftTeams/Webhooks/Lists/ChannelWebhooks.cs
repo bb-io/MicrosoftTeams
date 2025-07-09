@@ -13,10 +13,10 @@ public class ChannelWebhooks(InvocationContext invocationContext) : BaseWebhookL
     [Webhook("On message sent to channel", typeof(MessageSentToChannelWebhookHandler), 
         Description = "This webhook is triggered when a message is sent to the channel.")]
     public async Task<WebhookResponse<ChannelMessageDto>> OnMessageSent(WebhookRequest request,
-        [WebhookParameter] SenderInput sender)
+        [WebhookParameter] SenderInput sender, [WebhookParameter] MessageContainsInput messageFilter)
     {
         return await HandleWebhookRequest(request, 
-            new ChannelMessageWithSenderGetter(AuthenticationCredentialsProviders, sender));
+            new ChannelMessageWithSenderGetter(AuthenticationCredentialsProviders, sender, messageFilter));
     }
     
     [Webhook("On message with attachments sent to channel", typeof(MessageSentToChannelWebhookHandler), 
