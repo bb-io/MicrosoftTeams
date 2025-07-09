@@ -9,12 +9,14 @@ public class ChatMessageWithSenderGetter : ItemGetter<ChatMessageDto>
 {
     private readonly ChatInput _chat;
     private readonly SenderInput _sender;
-    
+    private readonly MessageContainsInput _messageFilter;
+
     public ChatMessageWithSenderGetter(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-        ChatInput chat, SenderInput sender) : base(authenticationCredentialsProviders)
+        ChatInput chat, SenderInput sender, MessageContainsInput messageFilter) : base(authenticationCredentialsProviders)
     {
         _chat = chat;
         _sender = sender;
+        _messageFilter = messageFilter;
     }
 
     public override async Task<ChatMessageDto?> GetItem(EventPayload eventPayload)
@@ -29,7 +31,11 @@ public class ChatMessageWithSenderGetter : ItemGetter<ChatMessageDto>
         
         if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
             return null;
+
+        if (!string.IsNullOrWhiteSpace(_messageFilter.Contains) && !message.Body.Content.Contains(_messageFilter.Contains,StringComparison.OrdinalIgnoreCase))
+            return null;
         
+
         return new ChatMessageDto(message);
     }
 }
