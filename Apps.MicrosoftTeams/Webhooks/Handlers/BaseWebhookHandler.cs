@@ -39,7 +39,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
                 ChangeType = _subscriptionEvent,
                 NotificationUrl = BridgeWebhooksUrl,
                 Resource = resource,
-                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromDays(2), // subscriptions expire after 1 hour -> subscriptions expire after 2 days
+                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60), // subscriptions expire after 1 hour -> subscriptions expire after 2 days
                 ClientState = ApplicationConstants.ClientState
             });
         }
