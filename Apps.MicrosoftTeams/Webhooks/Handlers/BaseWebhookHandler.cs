@@ -60,19 +60,42 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
         if (webhooksLeft == 0)
             await client.Subscriptions[subscription.Id].DeleteAsync();
     }
-    
+
     [Period(59)]
     public async Task RenewSubscription(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
-        var client = new MSTeamsClient(authenticationCredentialsProviders);
-        var subscription = await GetTargetSubscription(client);
+        InvocationContext.Logger?.LogInformation(
+           $"[MicrosoftTeamsHandleWebhookRequest] RenewSubscription method started; Bird info: {InvocationContext.Bird?.Id}" +
+           $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
 
-        var requestBody = new Subscription
+        var client = new MSTeamsClient(authenticationCredentialsProviders);
+
+        try
         {
-            ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60)
-        };
-        await client.Subscriptions[subscription!.Id].PatchAsync(requestBody);
+            var subscription = await GetTargetSubscription(client);
+
+            var requestBody = new Subscription
+            {
+                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60)
+            };
+            var updatedSubscription = await client.Subscriptions[subscription!.Id].PatchAsync(requestBody);
+
+            InvocationContext.Logger?.LogInformation(
+                $"[MicrosoftTeamsHandleWebhookRequest] Successfully renewed subscription {subscription.Id}. " +
+                $"Response - Id: {updatedSubscription?.Id}, ExpirationDateTime: {updatedSubscription?.ExpirationDateTime}, " +
+                $"Resource: {updatedSubscription?.Resource}, NotificationUrl: {updatedSubscription?.NotificationUrl}", []);
+
+            InvocationContext.Logger?.LogInformation(
+            $"[MicrosoftTeamsHandleWebhookRequest] Successfully renewed subscription {subscription.Id} with new expiration time: {requestBody.ExpirationDateTime}", []);
+        }
+        catch (Exception ex)
+        {
+            InvocationContext.Logger?.LogError(
+                $"[MicrosoftTeamsHandleWebhookRequest] RenewSubscription method failed with error: {ex.Message}; StackTrace: {ex.StackTrace}; Bird info: {InvocationContext.Bird?.Id}" +
+                $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
+            throw;
+        }
     }
 
     private async Task<Subscription?> GetTargetSubscription(MSTeamsClient client)
