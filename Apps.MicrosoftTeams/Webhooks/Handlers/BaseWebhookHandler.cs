@@ -61,7 +61,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
             await client.Subscriptions[subscription.Id].DeleteAsync();
     }
 
-    [Period(59)]
+    [Period(20)]
     public async Task RenewSubscription(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
@@ -91,7 +91,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
         }
         catch (Exception ex)
         {
-            InvocationContext.Logger?.LogError(
+            InvocationContext.Logger?.LogInformation(
                 $"[MicrosoftTeamsHandleWebhookRequest] RenewSubscription method failed with error: {ex.Message}; StackTrace: {ex.StackTrace}; Bird info: {InvocationContext.Bird?.Id}" +
                 $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
             throw;
