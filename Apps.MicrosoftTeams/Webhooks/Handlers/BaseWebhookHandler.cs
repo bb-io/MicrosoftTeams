@@ -61,7 +61,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
             await client.Subscriptions[subscription.Id].DeleteAsync();
     }
 
-    [Period(20)]
+    [Period(50)]
     public async Task RenewSubscription(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
@@ -85,9 +85,6 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
                 $"[MicrosoftTeamsHandleWebhookRequest] Successfully renewed subscription {subscription.Id}. " +
                 $"Response - Id: {updatedSubscription?.Id}, ExpirationDateTime: {updatedSubscription?.ExpirationDateTime}, " +
                 $"Resource: {updatedSubscription?.Resource}, NotificationUrl: {updatedSubscription?.NotificationUrl}", []);
-
-            InvocationContext.Logger?.LogInformation(
-            $"[MicrosoftTeamsHandleWebhookRequest] Successfully renewed subscription {subscription.Id} with new expiration time: {requestBody.ExpirationDateTime}", []);
         }
         catch (Exception ex)
         {
