@@ -42,6 +42,29 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
                 ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60),
                 ClientState = ApplicationConstants.ClientState
             });
+
+            InvocationContext.Logger?.LogInformation(
+               "[TeamsWebhook] Subscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, Expires={Expiry}, PayloadUrl={Url}",
+               new object[]
+               {
+                    _subscriptionEvent,
+                    resource,
+                    subscription?.Id,
+                    subscription?.ExpirationDateTime,
+                    values["payloadUrl"]
+               });
+        }
+        else
+        {
+            InvocationContext.Logger?.LogInformation(
+                "[TeamsWebhook] Subscription already exists: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}",
+                new object[]
+                {
+                    _subscriptionEvent,
+                    resource,
+                    subscription?.Id,
+                    values["payloadUrl"]
+                });
         }
 
         var bridgeService = new BridgeService(InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/'));
@@ -57,8 +80,24 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
         var bridgeService = new BridgeService(InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/'));
         var webhooksLeft = await bridgeService.Unsubscribe(values["payloadUrl"], subscription!.Id, _subscriptionEvent);
 
+        InvocationContext.Logger?.LogInformation(
+            "[TeamsWebhook] Unsubscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}, Remaining={Count}",
+            new object[]
+            {
+                _subscriptionEvent,
+                subscription.Resource,
+                subscription.Id,
+                values["payloadUrl"],
+                webhooksLeft
+            });
+
         if (webhooksLeft == 0)
+        {
             await client.Subscriptions[subscription.Id].DeleteAsync();
+            InvocationContext.Logger?.LogInformation(
+                "[TeamsWebhook] Subscription deleted: Id={Id}", []
+            );
+        }
     }
 
     [Period(50)]
