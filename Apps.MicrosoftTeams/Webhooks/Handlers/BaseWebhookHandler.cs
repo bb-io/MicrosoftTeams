@@ -49,7 +49,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
             });
 
             InvocationContext.Logger?.LogInformation(
-               "[TeamsWebhook] Subscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, Expires={Expiry}, PayloadUrl={Url}",
+               "[MicrosoftTeamsHandleWebhookRequest] Subscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, Expires={Expiry}, PayloadUrl={Url}",
                new object[]
                {
                     _subscriptionEvent,
@@ -62,7 +62,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
         else
         {
             InvocationContext.Logger?.LogInformation(
-                "[TeamsWebhook] Subscription already exists: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}",
+                "[MicrosoftTeamsHandleWebhookRequest] Subscription already exists: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}",
                 new object[]
                 {
                     _subscriptionEvent,
@@ -84,82 +84,49 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
            $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
 
         var client = new MSTeamsClient(authenticationCredentialsProviders);
-        Subscription? subscription = null;
-        try
-        {
-            subscription = await GetTargetSubscription(client);
-            InvocationContext.Logger?.LogInformation(
-                "[TeamsWebhook] After GetTargetSubscription: SubscriptionId={Id}, Resource={Resource}",
-                 new object[]
-                {
-                subscription?.Id ?? "null",
-                subscription?.Resource ?? "null"
-                }
-            );
-        }
-        catch (Exception ex)
-        {
-            InvocationContext.Logger?.LogError($"[MicrosoftTeamsHandleWebhookRequest] Error in GetTargetSubscription {ex.Message}- {ex.InnerException}", []
-            );
-            throw;
-        }
+        var subscription = await GetTargetSubscription(client);
 
-        if (subscription == null)
-        {
-            InvocationContext.Logger?.LogWarning(
-                "[MicrosoftTeamsHandleWebhookRequest] No existing subscription found for resource {Resource}", []
-            );
-            return;
-        }
+        var bridgeService = new BridgeService(InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/'));
+        var webhooksLeft = await bridgeService.Unsubscribe(values["payloadUrl"], subscription!.Id, _subscriptionEvent);
 
-        try
-        {
-            var payloadUrl = values.ContainsKey("payloadUrl") ? values["payloadUrl"] : "missing";
-            InvocationContext.Logger?.LogInformation(
-                "[MicrosoftTeamsHandleWebhookRequest] Calling bridgeService.Unsubscribe: SubscriptionId={Id}, PayloadUrl={Url}",
-                 new object[]
-                {
-                subscription.Id,
-                payloadUrl
-                }
-            );
-
-            var bridgeService = new BridgeService(
-                InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')
-            );
-            var webhooksLeft = await bridgeService.Unsubscribe(
-                payloadUrl,
-                subscription.Id,
-                _subscriptionEvent
-            );
-
-            InvocationContext.Logger?.LogInformation(
-                "[MicrosoftTeamsHandleWebhookRequest] Unsubscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}, Remaining={Count}",
-                 new object[]
-                {
+        InvocationContext.Logger?.LogInformation(
+            "[MicrosoftTeamsHandleWebhookRequest] Unsubscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}, Remaining={Count}",
+            new object[]
+            {
                 _subscriptionEvent,
                 subscription.Resource,
                 subscription.Id,
-                payloadUrl,
+                values["payloadUrl"],
                 webhooksLeft
-                }
+            });
+
+        if (webhooksLeft == 0)
+        {
+            InvocationContext.Logger?.LogInformation(
+                "[MicrosoftTeamsHandleWebhookRequest] About to delete Graph subscription: Id={SubscriptionId}",
+                new object[] { subscription.Id }
             );
 
-            if (webhooksLeft == 0)
+            try
             {
                 await client.Subscriptions[subscription.Id].DeleteAsync();
+
                 InvocationContext.Logger?.LogInformation(
-                    $"[TeamsWebhook] Subscription deleted: Id={subscription.Id}", []);
+                    "[MicrosoftTeamsHandleWebhookRequest] Subscription deleted: Id={SubscriptionId}",
+                    new object[] { subscription.Id }
+                );
+            }
+            catch (Exception ex)
+            {
+                InvocationContext.Logger?.LogError(
+                    "[MicrosoftTeamsHandleWebhookRequest] Failed to delete subscription: Id={SubscriptionId}",
+                    new object[] { subscription.Id }
+                );
+                throw;
             }
         }
-        catch (Exception ex)
-        {
-            InvocationContext.Logger?.LogError($"[TeamsWebhook] Exception during UnsubscribeAsync {ex.Message} - {ex.InnerException}",
-                []
-            );
-            throw;
-        }
     }
+        
 
     [Period(50)]
     public async Task RenewSubscription(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
