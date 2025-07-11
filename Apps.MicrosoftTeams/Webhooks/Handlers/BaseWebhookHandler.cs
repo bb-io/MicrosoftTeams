@@ -44,7 +44,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
                 ChangeType = _subscriptionEvent,
                 NotificationUrl = BridgeWebhooksUrl,
                 Resource = resource,
-                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60),
+                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(4000),
                 ClientState = ApplicationConstants.ClientState
             });
 
