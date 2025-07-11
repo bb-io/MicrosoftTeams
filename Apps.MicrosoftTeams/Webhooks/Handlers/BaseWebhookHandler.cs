@@ -28,6 +28,11 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
     public async Task SubscribeAsync(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
+
+        InvocationContext.Logger?.LogInformation(
+           $"[MicrosoftTeamsHandleWebhookRequest] Subscription method started; Bird info: {InvocationContext.Bird?.Id}" +
+           $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
+
         var client = new MSTeamsClient(authenticationCredentialsProviders);
         var resource = GetResource();
         var subscription = await GetTargetSubscription(client);
@@ -74,6 +79,10 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
     public async Task UnsubscribeAsync(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
+        InvocationContext.Logger?.LogInformation(
+           $"[MicrosoftTeamsHandleWebhookRequest] Unsubscription method started; Bird info: {InvocationContext.Bird?.Id}" +
+           $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
+
         var client = new MSTeamsClient(authenticationCredentialsProviders);
         var subscription = await GetTargetSubscription(client);
         
