@@ -129,7 +129,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
     }
         
 
-    [Period(50)]
+    [Period(3950)]
     public async Task RenewSubscription(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
@@ -145,7 +145,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
 
             var requestBody = new Subscription
             {
-                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60)
+                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(4000)
             };
             var updatedSubscription = await client.Subscriptions[subscription!.Id].PatchAsync(requestBody);
 
