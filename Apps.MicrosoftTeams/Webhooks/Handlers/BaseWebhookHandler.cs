@@ -45,7 +45,8 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
                 NotificationUrl = BridgeWebhooksUrl,
                 Resource = resource,
                 ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60),
-                ClientState = ApplicationConstants.ClientState
+                ClientState = ApplicationConstants.ClientState,
+                LifecycleNotificationUrl = BridgeWebhooksUrl
             });
 
             InvocationContext.Logger?.LogInformation(
