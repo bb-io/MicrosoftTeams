@@ -84,28 +84,80 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
            $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
 
         var client = new MSTeamsClient(authenticationCredentialsProviders);
-        var subscription = await GetTargetSubscription(client);
-        
-        var bridgeService = new BridgeService(InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/'));
-        var webhooksLeft = await bridgeService.Unsubscribe(values["payloadUrl"], subscription!.Id, _subscriptionEvent);
+        Subscription? subscription = null;
+        try
+        {
+            subscription = await GetTargetSubscription(client);
+            InvocationContext.Logger?.LogInformation(
+                "[TeamsWebhook] After GetTargetSubscription: SubscriptionId={Id}, Resource={Resource}",
+                 new object[]
+                {
+                subscription?.Id ?? "null",
+                subscription?.Resource ?? "null"
+                }
+            );
+        }
+        catch (Exception ex)
+        {
+            InvocationContext.Logger?.LogError($"[MicrosoftTeamsHandleWebhookRequest] Error in GetTargetSubscription {ex.Message}- {ex.InnerException}", []
+            );
+            throw;
+        }
 
-        InvocationContext.Logger?.LogInformation(
-            "[TeamsWebhook] Unsubscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}, Remaining={Count}",
-            new object[]
-            {
+        if (subscription == null)
+        {
+            InvocationContext.Logger?.LogWarning(
+                "[MicrosoftTeamsHandleWebhookRequest] No existing subscription found for resource {Resource}", []
+            );
+            return;
+        }
+
+        try
+        {
+            var payloadUrl = values.ContainsKey("payloadUrl") ? values["payloadUrl"] : "missing";
+            InvocationContext.Logger?.LogInformation(
+                "[MicrosoftTeamsHandleWebhookRequest] Calling bridgeService.Unsubscribe: SubscriptionId={Id}, PayloadUrl={Url}",
+                 new object[]
+                {
+                subscription.Id,
+                payloadUrl
+                }
+            );
+
+            var bridgeService = new BridgeService(
+                InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')
+            );
+            var webhooksLeft = await bridgeService.Unsubscribe(
+                payloadUrl,
+                subscription.Id,
+                _subscriptionEvent
+            );
+
+            InvocationContext.Logger?.LogInformation(
+                "[MicrosoftTeamsHandleWebhookRequest] Unsubscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}, Remaining={Count}",
+                 new object[]
+                {
                 _subscriptionEvent,
                 subscription.Resource,
                 subscription.Id,
-                values["payloadUrl"],
+                payloadUrl,
                 webhooksLeft
-            });
-
-        if (webhooksLeft == 0)
-        {
-            await client.Subscriptions[subscription.Id].DeleteAsync();
-            InvocationContext.Logger?.LogInformation(
-                "[TeamsWebhook] Subscription deleted: Id={Id}", []
+                }
             );
+
+            if (webhooksLeft == 0)
+            {
+                await client.Subscriptions[subscription.Id].DeleteAsync();
+                InvocationContext.Logger?.LogInformation(
+                    $"[TeamsWebhook] Subscription deleted: Id={subscription.Id}", []);
+            }
+        }
+        catch (Exception ex)
+        {
+            InvocationContext.Logger?.LogError($"[TeamsWebhook] Exception during UnsubscribeAsync {ex.Message} - {ex.InnerException}",
+                []
+            );
+            throw;
         }
     }
 
