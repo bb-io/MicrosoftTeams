@@ -28,6 +28,11 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
     public async Task SubscribeAsync(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
+
+        InvocationContext.Logger?.LogInformation(
+           $"[MicrosoftTeamsHandleWebhookRequest] Subscription method started; Bird info: {InvocationContext.Bird?.Id}" +
+           $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
+
         var client = new MSTeamsClient(authenticationCredentialsProviders);
         var resource = GetResource();
         var subscription = await GetTargetSubscription(client);
@@ -39,9 +44,33 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
                 ChangeType = _subscriptionEvent,
                 NotificationUrl = BridgeWebhooksUrl,
                 Resource = resource,
-                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60),
-                ClientState = ApplicationConstants.ClientState
+                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(4000),
+                ClientState = ApplicationConstants.ClientState,
+                LifecycleNotificationUrl = BridgeWebhooksUrl
             });
+
+            InvocationContext.Logger?.LogInformation(
+               "[MicrosoftTeamsHandleWebhookRequest] Subscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, Expires={Expiry}, PayloadUrl={Url}",
+               new object[]
+               {
+                    _subscriptionEvent,
+                    resource,
+                    subscription?.Id,
+                    subscription?.ExpirationDateTime,
+                    values["payloadUrl"]
+               });
+        }
+        else
+        {
+            InvocationContext.Logger?.LogInformation(
+                "[MicrosoftTeamsHandleWebhookRequest] Subscription already exists: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}",
+                new object[]
+                {
+                    _subscriptionEvent,
+                    resource,
+                    subscription?.Id,
+                    values["payloadUrl"]
+                });
         }
 
         var bridgeService = new BridgeService(InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/'));
@@ -51,17 +80,56 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
     public async Task UnsubscribeAsync(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
+        InvocationContext.Logger?.LogInformation(
+           $"[MicrosoftTeamsHandleWebhookRequest] Unsubscription method started; Bird info: {InvocationContext.Bird?.Id}" +
+           $"Flight info: {InvocationContext.Flight?.Id}, Tenant info:{InvocationContext.Tenant?.Id}", []);
+
         var client = new MSTeamsClient(authenticationCredentialsProviders);
         var subscription = await GetTargetSubscription(client);
-        
+
         var bridgeService = new BridgeService(InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/'));
         var webhooksLeft = await bridgeService.Unsubscribe(values["payloadUrl"], subscription!.Id, _subscriptionEvent);
 
-        if (webhooksLeft == 0)
-            await client.Subscriptions[subscription.Id].DeleteAsync();
-    }
+        InvocationContext.Logger?.LogInformation(
+            "[MicrosoftTeamsHandleWebhookRequest] Unsubscribed: Event={Event}, Resource={Resource}, SubscriptionId={Id}, PayloadUrl={Url}, Remaining={Count}",
+            new object[]
+            {
+                _subscriptionEvent,
+                subscription.Resource,
+                subscription.Id,
+                values["payloadUrl"],
+                webhooksLeft
+            });
 
-    [Period(50)]
+        if (webhooksLeft == 0)
+        {
+            InvocationContext.Logger?.LogInformation(
+                "[MicrosoftTeamsHandleWebhookRequest] About to delete Graph subscription: Id={SubscriptionId}",
+                new object[] { subscription.Id }
+            );
+
+            try
+            {
+                await client.Subscriptions[subscription.Id].DeleteAsync();
+
+                InvocationContext.Logger?.LogInformation(
+                    "[MicrosoftTeamsHandleWebhookRequest] Subscription deleted: Id={SubscriptionId}",
+                    new object[] { subscription.Id }
+                );
+            }
+            catch (Exception ex)
+            {
+                InvocationContext.Logger?.LogError(
+                    "[MicrosoftTeamsHandleWebhookRequest] Failed to delete subscription: Id={SubscriptionId}",
+                    new object[] { subscription.Id }
+                );
+                throw;
+            }
+        }
+    }
+        
+
+    [Period(3950)]
     public async Task RenewSubscription(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         Dictionary<string, string> values)
     {
@@ -77,7 +145,7 @@ public abstract class BaseWebhookHandler : BaseInvocable, IWebhookEventHandler, 
 
             var requestBody = new Subscription
             {
-                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(60)
+                ExpirationDateTime = DateTimeOffset.Now + TimeSpan.FromMinutes(4000)
             };
             var updatedSubscription = await client.Subscriptions[subscription!.Id].PatchAsync(requestBody);
 
