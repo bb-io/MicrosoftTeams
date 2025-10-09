@@ -10,7 +10,7 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams.Actions;
 
-[ActionList]
+[ActionList("Users")]
 public class UserActions(InvocationContext invocationContext) : BaseInvocable(invocationContext)
 {
     private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;

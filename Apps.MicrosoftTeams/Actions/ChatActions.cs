@@ -16,7 +16,7 @@ using Microsoft.Graph.Models.ODataErrors;
 
 namespace Apps.MicrosoftTeams.Actions;
 
-[ActionList]
+[ActionList("Chats")]
 public class ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseInvocable(invocationContext)
 {
     private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
