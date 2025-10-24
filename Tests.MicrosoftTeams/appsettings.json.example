@@ -1,7 +1,6 @@
 {
   "ConnectionDefinition": {
-    "token": "",
-    "url": ""
+    "Authorization": ""
   },
   "TestFolder": "TestFiles"
 }

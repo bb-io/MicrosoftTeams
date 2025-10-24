@@ -367,3 +367,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /Apps.MicrosoftTeams/ApplicationConstants.cs
 /Tests.MicrosoftTeams/appsettings.json
+/Tests.MicrosoftTeams/TestFiles/Output
