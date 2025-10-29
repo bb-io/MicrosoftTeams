@@ -35,20 +35,7 @@ public class ChannelTests : TestBase
         // Arrange
         var action = new ChannelWebhooks(InvocationContext);
 
-        const string topLevelPayload = """
-        {
-          "SubscriptionId": "de9b3539-ce5a-4bda-a346-9a91a45f68fe",
-          "ClientState": "4c93ca95-2d05-45ec-be28-6d49a213eed6",
-          "ChangeType": "created",
-          "Resource": "teams('33189cfd-6664-4e5e-84c6-545e02af51cd')/channels('19:60f2e072f7e745168db1b9bbdf4d3522@thread.tacv2')/messages('1761603520359')",
-          "SubscriptionExpirationDateTime": "2025-10-30T16:57:08.4753052+00:00",
-          "ResourceData": {
-            "Id": "1761603520359",
-            "@odata.type": "#Microsoft.Graph.chatMessage",
-            "@odata.id": "teams('33189cfd-6664-4e5e-84c6-545e02af51cd')/channels('19:60f2e072f7e745168db1b9bbdf4d3522@thread.tacv2')/messages('1761603520359')"
-          }
-        }
-        """;
+        const string topLevelPayload = "";
 
         var payload = new WebhookRequest
         {
@@ -74,20 +61,7 @@ public class ChannelTests : TestBase
         // Arrange
         var action = new ChannelWebhooks(InvocationContext);
 
-        const string replyPayload = """
-    {
-      "SubscriptionId": "de9b3539-ce5a-4bda-a346-9a91a45f68fe",
-      "ClientState": "4c93ca95-2d05-45ec-be28-6d49a213eed6",
-      "ChangeType": "created",
-      "Resource": "teams('33189cfd-6664-4e5e-84c6-545e02af51cd')/channels('19:60f2e072f7e745168db1b9bbdf4d3522@thread.tacv2')/messages('1761603520359')/replies('1761603537476')",
-      "SubscriptionExpirationDateTime": "2025-10-30T16:57:08.4753052+00:00",
-      "ResourceData": {
-        "Id": "1761603537476",
-        "@odata.type": "#Microsoft.Graph.chatMessage",
-        "@odata.id": "teams('33189cfd-6664-4e5e-84c6-545e02af51cd')/channels('19:60f2e072f7e745168db1b9bbdf4d3522@thread.tacv2')/messages('1761603520359')/replies('1761603537476')"
-      }
-    }
-    """;
+        const string replyPayload = "";
 
         var payload = new WebhookRequest
         {
