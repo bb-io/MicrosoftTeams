@@ -2,6 +2,10 @@
 using Tests.MicrosoftTeams.Base;
 using Apps.MicrosoftTeams.Actions;
 using Apps.MicrosoftTeams.Models.Identifiers;
+using Apps.MicrosoftTeams.Webhooks.Lists;
+using Blackbird.Applications.Sdk.Common.Webhooks;
+using Apps.MicrosoftTeams.Webhooks.Inputs;
+using Newtonsoft.Json.Linq;
 
 namespace Tests.MicrosoftTeams;
 
@@ -22,5 +26,58 @@ public class ChannelTests : TestBase
         // Assert
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
+    }
+
+
+    [TestMethod]
+    public async Task WebhookTest_TopLevelMessage_PayloadOnly()
+    {
+        // Arrange
+        var action = new ChannelWebhooks(InvocationContext);
+
+        const string topLevelPayload = "";
+
+        var payload = new WebhookRequest
+        {
+            Body = JToken.Parse(topLevelPayload)
+        };
+
+        var sender = new SenderInput
+        {
+        };
+
+        // Act
+        var result = await action.OnMessageWithAttachmentSent(payload, sender);
+
+        // Assert
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.HttpResponseMessage);
+    }
+
+    [TestMethod]
+    public async Task WebhookTest_Reply_PayloadOnly()
+    {
+        // Arrange
+        var action = new ChannelWebhooks(InvocationContext);
+
+        const string replyPayload = "";
+
+        var payload = new WebhookRequest
+        {
+            Body = JToken.Parse(replyPayload)
+        };
+
+        var sender = new SenderInput
+        {
+        };
+
+        // Act
+        var result = await action.OnMessageWithAttachmentSent(payload, sender);
+
+        // Assert
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.HttpResponseMessage);
     }
 }
