@@ -17,11 +17,11 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         CancellationToken cancellationToken)
     {
         var creds = OAuthCredentials.GetOAuthCredentials(values);
-        const string grant_type = "refresh_token";
+        const string GrantType = "refresh_token";
 
         var bodyParameters = new Dictionary<string, string>
         {
-            { "grant_type", grant_type },
+            { "grant_type", GrantType },
             { "refresh_token", values["refresh_token"] },
             { "client_id", creds.ClientId },
             { "client_secret", creds.ClientSecret }
@@ -36,12 +36,12 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         Dictionary<string, string> values,
         CancellationToken cancellationToken)
     {
-        const string grant_type = "authorization_code";
+        const string GrantType = "authorization_code";
 
         var creds = OAuthCredentials.GetOAuthCredentials(values);
         var bodyParameters = new Dictionary<string, string>
         {
-            { "grant_type", grant_type },
+            { "grant_type", GrantType },
             { "client_id", creds.ClientId },
             { "client_secret", creds.ClientSecret },
             { "code", code },
