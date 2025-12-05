@@ -1,51 +1,54 @@
-﻿using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Authentication.OAuth2;
+﻿using System.Text.Json;
+using Apps.MicrosoftTeams.Models.Utility;
+using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using System.Text.Json;
+using Blackbird.Applications.Sdk.Common.Authentication.OAuth2;
 
 namespace Apps.MicrosoftTeams.Authorization.OAuth2;
 
 public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvocable(invocationContext), IOAuth2TokenService
 {
-    private const string TokenUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
     private const string ExpiresAtKeyName = "expires_at";
 
     public bool IsRefreshToken(Dictionary<string, string> values)
         => values.TryGetValue(ExpiresAtKeyName, out var expireValue) && DateTime.UtcNow > DateTime.Parse(expireValue);
 
-    public async Task<Dictionary<string, string>> RefreshToken(Dictionary<string, string> values, 
-        CancellationToken cancellationToken) 
-    { 
-        const string grant_type = "refresh_token";
+    public async Task<Dictionary<string, string>> RefreshToken(Dictionary<string, string> values,
+        CancellationToken cancellationToken)
+    {
+        var creds = OAuthCredentials.GetOAuthCredentials(values);
+        const string GrantType = "refresh_token";
+
         var bodyParameters = new Dictionary<string, string>
         {
-            { "grant_type", grant_type },
+            { "grant_type", GrantType },
             { "refresh_token", values["refresh_token"] },
-            { "client_id", ApplicationConstants.ClientId },
-            { "client_secret", ApplicationConstants.ClientSecret }
+            { "client_id", creds.ClientId },
+            { "client_secret", creds.ClientSecret }
         };
 
-        return await RequestToken(bodyParameters, cancellationToken);
+        return await RequestToken(bodyParameters, creds.TokenUrl, cancellationToken);
     }
 
     public async Task<Dictionary<string, string>> RequestToken(
-        string state, 
-        string code, 
-        Dictionary<string, string> values, 
+        string state,
+        string code,
+        Dictionary<string, string> values,
         CancellationToken cancellationToken)
     {
-        const string grant_type = "authorization_code";
+        const string GrantType = "authorization_code";
 
+        var creds = OAuthCredentials.GetOAuthCredentials(values);
         var bodyParameters = new Dictionary<string, string>
         {
-            { "grant_type", grant_type },
-            { "client_id", ApplicationConstants.ClientId },
-            { "client_secret", ApplicationConstants.ClientSecret },
+            { "grant_type", GrantType },
+            { "client_id", creds.ClientId },
+            { "client_secret", creds.ClientSecret },
             { "code", code },
             { "redirect_uri", $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}/AuthorizationCode" },
         };
-        
-        return await RequestToken(bodyParameters, cancellationToken);
+
+        return await RequestToken(bodyParameters, creds.TokenUrl, cancellationToken);
     }
 
     public Task RevokeToken(Dictionary<string, string> values)
@@ -53,18 +56,21 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         throw new NotImplementedException();
     }
 
-    private async Task<Dictionary<string, string>> RequestToken(Dictionary<string, string> bodyParameters, CancellationToken cancellationToken)
+    private async Task<Dictionary<string, string>> RequestToken(
+        Dictionary<string, string> bodyParameters,
+        string tokenUrl,
+        CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         using HttpClient httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         using var httpContent = new FormUrlEncodedContent(bodyParameters);
-        
+
         try
         {
-            using var response = await httpClient.PostAsync(TokenUrl, httpContent, cancellationToken);
+            using var response = await httpClient.PostAsync(tokenUrl, httpContent, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 InvocationContext.Logger?.LogError(
@@ -72,7 +78,7 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
                     []);
                 response.EnsureSuccessStatusCode(); // This will throw
             }
-            
+
             var resultDictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent)?.ToDictionary(r => r.Key, r => r.Value?.ToString())
                 ?? throw new InvalidOperationException($"Invalid response content: {responseContent}");
             var expiresIn = int.Parse(resultDictionary["expires_in"]);
@@ -86,7 +92,7 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
             InvocationContext.Logger?.LogError(
                 $"[MicrosoftTeamsOAuth2] Failed to request token. Exception: {ex.Message}; Parameters: {JsonSerializer.Serialize(parameters)}",
                 []);
-            
+
             throw;
         }
     }

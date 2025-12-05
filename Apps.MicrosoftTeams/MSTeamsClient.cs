@@ -1,6 +1,6 @@
-﻿using Blackbird.Applications.Sdk.Common.Authentication;
-using Microsoft.Graph;
+﻿using Microsoft.Graph;
 using Microsoft.Kiota.Abstractions.Authentication;
+using Blackbird.Applications.Sdk.Common.Authentication;
 
 namespace Apps.MicrosoftTeams;
 
