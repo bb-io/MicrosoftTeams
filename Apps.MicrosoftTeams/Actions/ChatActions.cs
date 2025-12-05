@@ -114,9 +114,13 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
                 var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
                 var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
+
                 var fileContentStream = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
-                var file = await _fileManagementClient.UploadAsync(fileContentStream, fileData.File.MimeType,
-                    fileData.Name);
+                var memoryStream = new MemoryStream();
+                await fileContentStream.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
+
+                var file = await _fileManagementClient.UploadAsync(memoryStream, fileData.File.MimeType, fileData.Name);
                 resultFiles.Add(file);
             }
             
