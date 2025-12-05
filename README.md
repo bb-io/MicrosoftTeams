@@ -40,17 +40,39 @@ The second way is to configure admin consent workflow:
 
 ![Enable admin consent workflow](image/README/enable-admin-consent-workflow.png)
 
+### Custom Azure app
+
+If you want to use a custom Azure application for authorization, you should do the following:
+
+- Go to Azure > _App registrations_ > _New registration_.
+- Enter the name of your application and choose the supported account types. CLick _Register_.
+- Go to _Manage_ > _API permissions_ and select the required scopes:
+    * _If you need to manage channel messages_, select the following permissions: User.Read, User.ReadBasic.All, Team.ReadBasic.All, Chat.ReadWrite, Channel.ReadBasic.All, ChannelMessage.Read.All, ChannelMessage.Send, Files.ReadWrite, offline_access
+    * _If you don't need to manage channel messages_, select the following: User.Read, User.ReadBasic.All, Team.ReadBasic.All, Channel.ReadBasic.All, Chat.ReadWrite, ChannelMessage.Send, Files.ReadWrite, offline_access
+- Go to _Manage_ > _Authentication_ and click _Add a platform_. Choose _Web_ and enter this redirect URI: https://bridge.blackbird.io/api/AuthorizationCode
+- Go to _Manage_ > _Certificates & secrets_ and click _New client secret_. Enter a description (optional) and set the expiration time. **Copy the created secret value, as you won't be able to see it again**.
+- Go to _Overview_ and copy the _Application (client) ID_ and _Directory (tenant) ID_. Use these values to register your connection in Blackbird.
+
 ## Connecting
 
-1. Navigate to apps and search for Microsoft 365 Teams.
-2. Click _Add Connection_.
-3. Name your connection for future reference e.g. 'My organization'.
-4. Under _Channel messages scope required_ specify _Yes_ if you want to use webhooks and/or actions for channel messages and _No_ if not. Different scopes are added to authorization request based on the value of this connection parameter.
-5. Click _Authorize connection_.
-6. Follow the instructions that Microsoft gives you, authorizing Blackbird.io to act on your behalf.
-7. When you return to Blackbird, confirm that the connection has appeared and the status is _Connected_.
+Navigate to apps and search for Microsoft 365 Teams, click _Add Connection_ and name your connection for future reference e.g. 'My organization'.
 
-![Connecting](image/README/connecting.png)
+### OAuth2
+
+1. Under _Channel messages scope required_ specify _Yes_ if you want to use webhooks and/or actions for channel messages and _No_ if not. Different scopes are added to authorization request based on the value of this connection parameter.
+2. Click _Authorize connection_.
+3. Follow the instructions that Microsoft gives you, authorizing Blackbird.io to act on your behalf.
+4. When you return to Blackbird, confirm that the connection has appeared and the status is _Connected_.
+
+![Connecting using OAuth2](image/README/oauth.png)
+
+### OAuth2 (Azure app)
+
+1. Under _Channel messages scope required_ specify _Yes_ if you want to use webhooks and/or actions for channel messages and _No_ if not. Different scopes are added to authorization request based on the value of this connection parameter.
+2. Enter the _Application (client) ID_, _Directory (tenant) ID_ and _Client secret_ obtained from your custom Azure app.
+3. Follow the instructions that Microsoft gives you, authorizing Blackbird.io to act on your behalf.
+4. When you return to Blackbird, confirm that the connection has appeared and the status is _Connected_.
+![Connecting using Azure app](image/README/azure.png)
 
 ## Actions
 
