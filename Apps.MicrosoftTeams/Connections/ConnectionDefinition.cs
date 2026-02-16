@@ -49,7 +49,7 @@ public class ConnectionDefinition : IConnectionDefinition
         },
         new()
         {
-            Name = ConnectionTypes.ClientCreds,
+            Name = ConnectionTypes.AzureAppCreds,
             DisplayName = "Service Account (Client Credentials)",
             AuthenticationType = ConnectionAuthenticationType.Undefined,
             ConnectionProperties =

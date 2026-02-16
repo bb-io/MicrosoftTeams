@@ -1,10 +1,9 @@
 ﻿using System.Text.Json;
-using Apps.MicrosoftTeams.Constants;
 using Apps.MicrosoftTeams.Models.Utility;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Authentication.OAuth2;
-using Blackbird.Applications.Sdk.Common.Invocation;
 
 namespace Apps.MicrosoftTeams.Authorization.OAuth2;
 
@@ -33,20 +32,13 @@ public class OAuth2TokenService(InvocationContext invocationContext)
         CancellationToken cancellationToken)
     {
         var creds = OAuthCredentials.GetOAuthCredentials(values);
-        Dictionary<string, string> bodyParameters;
-
-        if (IsClientCredsFlow(values))
-            bodyParameters = GetClientCredentialsBody(creds);
-        else
+        var bodyParameters = new Dictionary<string, string>
         {
-            bodyParameters = new Dictionary<string, string>
-            {
-                { "grant_type", "refresh_token" },
-                { "refresh_token", values["refresh_token"] },
-                { "client_id", creds.ClientId },
-                { "client_secret", creds.ClientSecret }
-            };
-        }
+            { "grant_type", "refresh_token" },
+            { "refresh_token", values["refresh_token"] },
+            { "client_id", creds.ClientId },
+            { "client_secret", creds.ClientSecret }
+        };
 
         return await RequestToken(bodyParameters, creds.TokenUrl, cancellationToken);
     }
@@ -58,21 +50,14 @@ public class OAuth2TokenService(InvocationContext invocationContext)
         CancellationToken cancellationToken)
     {
         var creds = OAuthCredentials.GetOAuthCredentials(values);
-        Dictionary<string, string> bodyParameters;
-
-        if (IsClientCredsFlow(values))
-            bodyParameters = GetClientCredentialsBody(creds);
-        else
+        var bodyParameters = new Dictionary<string, string>
         {
-            bodyParameters = new Dictionary<string, string>
-            {
-                { "grant_type", "authorization_code" },
-                { "client_id", creds.ClientId },
-                { "client_secret", creds.ClientSecret },
-                { "code", code },
-                { "redirect_uri", $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}/AuthorizationCode" },
-            };
-        }        
+            { "grant_type", "authorization_code" },
+            { "client_id", creds.ClientId },
+            { "client_secret", creds.ClientSecret },
+            { "code", code },
+            { "redirect_uri", $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}/AuthorizationCode" },
+        };
 
         return await RequestToken(bodyParameters, creds.TokenUrl, cancellationToken);
     }
@@ -121,23 +106,5 @@ public class OAuth2TokenService(InvocationContext invocationContext)
 
             throw;
         }
-    }
-
-    private static Dictionary<string, string> GetClientCredentialsBody(OAuthCredentials creds)
-    {
-        return new Dictionary<string, string>
-        {
-            { "grant_type", "client_credentials" },
-            { "client_id", creds.ClientId },
-            { "client_secret", creds.ClientSecret },
-            { "scope", "https://graph.microsoft.com/.default" }
-        };
-    }
-
-    private static bool IsClientCredsFlow(Dictionary<string, string> values)
-    {
-        if (values.TryGetValue(CredNames.ConnectionType, out var connectionType))
-            return connectionType == ConnectionTypes.ClientCreds;
-        else return false;
     }
 }

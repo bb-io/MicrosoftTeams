@@ -1,26 +1,60 @@
-﻿using Microsoft.Graph;
-using Microsoft.Kiota.Abstractions.Authentication;
+﻿using Apps.MicrosoftTeams.Constants;
+using Apps.MicrosoftTeams.Models.Utility;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
+using Microsoft.Graph;
+using Microsoft.Kiota.Abstractions.Authentication;
+using RestSharp;
+using System.Text.Json;
 
 namespace Apps.MicrosoftTeams;
 
-public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
-    : GraphServiceClient(GetAuthenticationProvider(authenticationCredentialsProviders))
+public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> creds)
+    : GraphServiceClient(GetAuthenticationProvider(creds))
 {
     private static BaseBearerTokenAuthenticationProvider GetAuthenticationProvider(
-        IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
+        IEnumerable<AuthenticationCredentialsProvider> creds)
     {
-        try
+        string connectionType = creds.Get(CredNames.ConnectionType).Value;
+        AccessTokenProvider provider;
+        switch (connectionType)
         {
-            var token = authenticationCredentialsProviders.First(p => p.KeyName == "access_token").Value;
-            var accessTokenProvider = new AccessTokenProvider(token);
-            return new BaseBearerTokenAuthenticationProvider(accessTokenProvider);
+            case ConnectionTypes.OAuth:
+            case ConnectionTypes.OAuthAzure:
+                string oauthToken = creds.First(p => p.KeyName == "access_token").Value;
+                provider = new AccessTokenProvider(oauthToken);
+                break;
+            case ConnectionTypes.AzureAppCreds:
+                string azureToken = GetAzureCredsToken(creds);
+                provider = new AccessTokenProvider(azureToken);
+                break;
+            default:
+                throw new Exception($"Unsupported connection type in MSTeamsClient: {connectionType}");
         }
-        catch (Exception ex)
-        {
-            // DEV only
-            string creds = string.Join(", ", authenticationCredentialsProviders.Select(x => $"{x.KeyName} = {x.Value}").ToList());
-            throw new Exception($"Failed in MSTeamsClient: {ex.Message} Stack: {ex.StackTrace} Creds: {creds}");
-        }
+        return new BaseBearerTokenAuthenticationProvider(provider);
+    }
+
+    private static string GetAzureCredsToken(IEnumerable<AuthenticationCredentialsProvider> creds)
+    {
+        string clientId = creds.Get(CredNames.AzureClientId).Value;
+        string tenantId = creds.Get(CredNames.AzureTenantId).Value;
+        string clientSecret = creds.Get(CredNames.AzureClientSecret).Value;
+        string url = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
+
+        var client = new RestClient($"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0");
+        var request = new RestRequest("/token", Method.Post);
+
+        request.AddParameter("grant_type", "client_credentials");
+        request.AddParameter("client_id", clientId);
+        request.AddParameter("client_secret", clientSecret);
+        request.AddParameter("scope", "https://graph.microsoft.com/.default");
+
+        var response = client.Execute(request);
+
+        if (!response.IsSuccessful)
+            throw new Exception($"Failed to fetch Azure token. Status: {response.StatusCode}. Content: {response.Content}");
+
+        var result = JsonSerializer.Deserialize<AzureAuthResponse>(response.Content!);
+        return result?.AccessToken ?? throw new Exception("Access token missing in response (Azure)");
     }
 }
