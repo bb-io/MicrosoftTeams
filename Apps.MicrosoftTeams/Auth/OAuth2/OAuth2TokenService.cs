@@ -1,13 +1,14 @@
-﻿using Apps.MicrosoftTeams.Models.Utility;
+﻿using System.Text.Json;
+using Apps.MicrosoftTeams.Models.Utility;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Authentication.OAuth2;
-using Blackbird.Applications.Sdk.Common.Invocation;
-using System.Text.Json;
 
 namespace Apps.MicrosoftTeams.Authorization.OAuth2;
 
-public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvocable(invocationContext), IOAuth2TokenService, ITokenRefreshable
+public class OAuth2TokenService(InvocationContext invocationContext) 
+    : BaseInvocable(invocationContext), IOAuth2TokenService, ITokenRefreshable
 {
     private const string ExpiresAtKeyName = "expires_at";
 
@@ -31,11 +32,9 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         CancellationToken cancellationToken)
     {
         var creds = OAuthCredentials.GetOAuthCredentials(values);
-        const string GrantType = "refresh_token";
-
         var bodyParameters = new Dictionary<string, string>
         {
-            { "grant_type", GrantType },
+            { "grant_type", "refresh_token" },
             { "refresh_token", values["refresh_token"] },
             { "client_id", creds.ClientId },
             { "client_secret", creds.ClientSecret }
@@ -50,12 +49,10 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         Dictionary<string, string> values,
         CancellationToken cancellationToken)
     {
-        const string GrantType = "authorization_code";
-
         var creds = OAuthCredentials.GetOAuthCredentials(values);
         var bodyParameters = new Dictionary<string, string>
         {
-            { "grant_type", GrantType },
+            { "grant_type", "authorization_code" },
             { "client_id", creds.ClientId },
             { "client_secret", creds.ClientSecret },
             { "code", code },
