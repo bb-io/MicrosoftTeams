@@ -13,8 +13,8 @@ public class ConnectionDefinition : IConnectionDefinition
             Name = ConnectionTypes.OAuth,
             DisplayName = "OAuth2",
             AuthenticationType = ConnectionAuthenticationType.OAuth2,
-            ConnectionProperties = new List<ConnectionProperty>
-            {
+            ConnectionProperties =
+            [
                 new(CredNames.AdminPermissionRequired)
                 {
                     DisplayName = "Channel messages scope required",
@@ -24,15 +24,15 @@ public class ConnectionDefinition : IConnectionDefinition
                         new("no", "No")
                     ]
                 }
-            }
+            ]
         },
         new()
         {
             Name = ConnectionTypes.OAuthAzure,
             DisplayName = "OAuth2 (Azure app)",
             AuthenticationType = ConnectionAuthenticationType.OAuth2,
-            ConnectionProperties = new List<ConnectionProperty>
-            {
+            ConnectionProperties =
+            [
                 new(CredNames.AdminPermissionRequired)
                 {
                     DisplayName = "Channel messages scope required",
@@ -45,7 +45,19 @@ public class ConnectionDefinition : IConnectionDefinition
                 new(CredNames.AzureClientId) { DisplayName = "Application (client) ID" },
                 new(CredNames.AzureTenantId) { DisplayName = "Directory (tenant) ID" },
                 new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true }
-            }
+            ]
+        },
+        new()
+        {
+            Name = ConnectionTypes.ClientCreds,
+            DisplayName = "Service Account (Client Credentials)",
+            AuthenticationType = ConnectionAuthenticationType.Undefined,
+            ConnectionProperties =
+            [
+                new(CredNames.AzureClientId) { DisplayName = "Application (client) ID" },
+                new(CredNames.AzureTenantId) { DisplayName = "Directory (tenant) ID" },
+                new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true }
+            ]
         }
     };
 
