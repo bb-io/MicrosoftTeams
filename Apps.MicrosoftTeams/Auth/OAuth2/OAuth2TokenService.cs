@@ -5,11 +5,11 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Authentication.OAuth2;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 
 namespace Apps.MicrosoftTeams.Authorization.OAuth2;
 
-public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvocable(invocationContext), IOAuth2TokenService, ITokenRefreshable
+public class OAuth2TokenService(InvocationContext invocationContext) 
+    : BaseInvocable(invocationContext), IOAuth2TokenService, ITokenRefreshable
 {
     private const string ExpiresAtKeyName = "expires_at";
 
@@ -35,7 +35,7 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         var creds = OAuthCredentials.GetOAuthCredentials(values);
         Dictionary<string, string> bodyParameters;
 
-        if (IsClientCredsFlow())
+        if (IsClientCredsFlow(values))
             bodyParameters = GetClientCredentialsBody(creds);
         else
         {
@@ -60,7 +60,7 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         var creds = OAuthCredentials.GetOAuthCredentials(values);
         Dictionary<string, string> bodyParameters;
 
-        if (IsClientCredsFlow())
+        if (IsClientCredsFlow(values))
             bodyParameters = GetClientCredentialsBody(creds);
         else
         {
@@ -123,7 +123,7 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         }
     }
 
-    private Dictionary<string, string> GetClientCredentialsBody(OAuthCredentials creds)
+    private static Dictionary<string, string> GetClientCredentialsBody(OAuthCredentials creds)
     {
         return new Dictionary<string, string>
         {
@@ -134,11 +134,14 @@ public class OAuth2TokenService(InvocationContext invocationContext) : BaseInvoc
         };
     }
 
-    private bool IsClientCredsFlow()
+    private bool IsClientCredsFlow(Dictionary<string, string> values)
     {
-        return InvocationContext
-            .AuthenticationCredentialsProviders
-            .Get(CredNames.ConnectionType)
-            .Value == ConnectionTypes.ClientCreds;
+        if (values.TryGetValue(CredNames.ConnectionType, out var connectionType))
+            return connectionType == ConnectionTypes.ClientCreds;
+
+        var provider = InvocationContext.AuthenticationCredentialsProviders
+            .FirstOrDefault(p => p.KeyName == CredNames.ConnectionType);
+
+        return provider?.Value == ConnectionTypes.ClientCreds;
     }
 }
