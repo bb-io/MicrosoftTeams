@@ -4,8 +4,8 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
 using Microsoft.Graph;
 using Microsoft.Kiota.Abstractions.Authentication;
+using Newtonsoft.Json;
 using RestSharp;
-using System.Text.Json;
 
 namespace Apps.MicrosoftTeams;
 
@@ -39,7 +39,6 @@ public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> creds)
         string clientId = creds.Get(CredNames.AzureClientId).Value;
         string tenantId = creds.Get(CredNames.AzureTenantId).Value;
         string clientSecret = creds.Get(CredNames.AzureClientSecret).Value;
-        string url = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
 
         var client = new RestClient($"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0");
         var request = new RestRequest("/token", Method.Post);
@@ -54,7 +53,7 @@ public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> creds)
         if (!response.IsSuccessful)
             throw new Exception($"Failed to fetch Azure token. Status: {response.StatusCode}. Content: {response.Content}");
 
-        var result = JsonSerializer.Deserialize<AzureAuthResponse>(response.Content!);
+        var result = JsonConvert.DeserializeObject<AzureAuthResponse>(response.Content!);
         return result?.AccessToken ?? throw new Exception("Access token missing in response (Azure)");
     }
 }
