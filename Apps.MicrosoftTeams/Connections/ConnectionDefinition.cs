@@ -64,7 +64,21 @@ public class ConnectionDefinition : IConnectionDefinition
     public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
         Dictionary<string, string> values)
     {
-        var token = values.First(v => v.Key == "access_token");
-        yield return new AuthenticationCredentialsProvider("Authorization", $"{token.Value}");
+        try
+        {
+            var credentials = values.Select(x => new AuthenticationCredentialsProvider(x.Key, x.Value)).ToList();
+            var connectionType = values[nameof(ConnectionPropertyGroup)] switch
+            {
+                var ct when ConnectionTypes.SupportedConnectionTypes.Contains(ct) => ct,
+                _ => throw new Exception($"Unknown connection type: {values[nameof(ConnectionPropertyGroup)]}")
+            };
+
+            credentials.Add(new AuthenticationCredentialsProvider(CredNames.ConnectionType, connectionType));
+            return credentials;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed in CreateAuthorizationCredentialsProviders: {ex.Message} Stack: {ex.StackTrace}");
+        }
     }
 }
