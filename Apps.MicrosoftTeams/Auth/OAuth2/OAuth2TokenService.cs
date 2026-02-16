@@ -134,14 +134,10 @@ public class OAuth2TokenService(InvocationContext invocationContext)
         };
     }
 
-    private bool IsClientCredsFlow(Dictionary<string, string> values)
+    private static bool IsClientCredsFlow(Dictionary<string, string> values)
     {
         if (values.TryGetValue(CredNames.ConnectionType, out var connectionType))
             return connectionType == ConnectionTypes.ClientCreds;
-
-        var provider = InvocationContext.AuthenticationCredentialsProviders
-            .FirstOrDefault(p => p.KeyName == CredNames.ConnectionType);
-
-        return provider?.Value == ConnectionTypes.ClientCreds;
+        else return false;
     }
 }
