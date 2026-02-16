@@ -12,7 +12,7 @@ public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> authen
     {
         try
         {
-            var token = authenticationCredentialsProviders.First(p => p.KeyName == "Authorization").Value;
+            var token = authenticationCredentialsProviders.First(p => p.KeyName == "access_token").Value;
             var accessTokenProvider = new AccessTokenProvider(token);
             return new BaseBearerTokenAuthenticationProvider(accessTokenProvider);
         }
