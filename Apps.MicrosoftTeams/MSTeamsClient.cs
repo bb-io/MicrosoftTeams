@@ -7,10 +7,20 @@ namespace Apps.MicrosoftTeams;
 public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
     : GraphServiceClient(GetAuthenticationProvider(authenticationCredentialsProviders))
 {
-    private static BaseBearerTokenAuthenticationProvider GetAuthenticationProvider(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
+    private static BaseBearerTokenAuthenticationProvider GetAuthenticationProvider(
+        IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
     {
-        var token = authenticationCredentialsProviders.First(p => p.KeyName == "Authorization").Value;
-        var accessTokenProvider = new AccessTokenProvider(token);
-        return new BaseBearerTokenAuthenticationProvider(accessTokenProvider);
+        try
+        {
+            var token = authenticationCredentialsProviders.First(p => p.KeyName == "Authorization").Value;
+            var accessTokenProvider = new AccessTokenProvider(token);
+            return new BaseBearerTokenAuthenticationProvider(accessTokenProvider);
+        }
+        catch (Exception ex)
+        {
+            // DEV only
+            string creds = string.Join(", ", authenticationCredentialsProviders.Select(x => $"{x.KeyName} = {x.Value}").ToList());
+            throw new Exception($"Failed in MSTeamsClient: {ex.Message} Stack: {ex.StackTrace} Creds: {creds}");
+        }
     }
 }
