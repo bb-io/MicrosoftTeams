@@ -25,7 +25,7 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
     private readonly IFileManagementClient _fileManagementClient = fileManagementClient;
 
     [Action("Get channel message", Description = "Get channel message")]
-    public async Task<ChannelMessageDto> GetChannelMessage([ActionParameter] ChannelIdentifier channelIdentifier, 
+    public async Task<ChannelMessageDto> GetChannelMessage([ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] MessageIdentifier messageIdentifier)
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
@@ -46,10 +46,10 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
             throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
-    
+
     [Action("Download files attached to channel message", Description = "Download files attached to channel message")]
     public async Task<DownloadFilesAttachedToMessageResponse> DownloadFilesAttachedToMessage(
-        [ActionParameter] ChannelIdentifier channelIdentifier, 
+        [ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] MessageIdentifier messageIdentifier)
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
@@ -59,14 +59,16 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         {
             var message = await client.Teams[teamChannel.TeamId].Channels[teamChannel.ChannelId]
                 .Messages[messageIdentifier.MessageId].GetAsync();
-            var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
+            var fileAttachments = message.Attachments?
+                .Where(a => a.ContentType == "reference")
+                ?? Enumerable.Empty<ChatMessageAttachment>();
             var resultFiles = new List<FileReference>();
 
             foreach (var attachment in fileAttachments)
             {
                 var sharingUrl = attachment.ContentUrl;
                 var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
-                var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
+                var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/', '_').Replace('+', '-');
                 var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
 
                 var fileContentStream = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
@@ -74,12 +76,14 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
                 await fileContentStream.CopyToAsync(memoryStream);
                 memoryStream.Position = 0;
 
-                var file = await _fileManagementClient.UploadAsync(memoryStream, fileData.File.MimeType,
-                    fileData.Name);
+                var file = await _fileManagementClient.UploadAsync(memoryStream, fileData.File.MimeType, fileData.Name);
                 resultFiles.Add(file);
             }
-            
-            return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
+
+            return new DownloadFilesAttachedToMessageResponse
+            {
+                Files = resultFiles.Select(file => new FileDto(file))
+            };
         }
         catch (ODataError error)
         {
@@ -90,14 +94,15 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
             throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
-    
+
     [Action("Send message to channel", Description = "Send message to channel")]
-    public async Task<ChannelMessageDto> SendMessageToChannel([ActionParameter] ChannelIdentifier channelIdentifier, 
+    public async Task<ChannelMessageDto> SendMessageToChannel(
+        [ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] SendMessageRequest input)
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
-        var requestBody = await CreateChannelMessage(client, input);
+        var requestBody = await CreateChannelMessage(client, input, teamChannel);
 
         try
         {
@@ -114,14 +119,16 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
             throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
     }
-    
+
     [Action("Reply to message in channel", Description = "Reply to message in channel")]
-    public async Task<ChannelMessageDto> ReplyToMessageInChannel([ActionParameter] ChannelIdentifier channelIdentifier, 
-        [ActionParameter] MessageIdentifier messageIdentifier, [ActionParameter] SendMessageRequest input)
+    public async Task<ChannelMessageDto> ReplyToMessageInChannel(
+        [ActionParameter] ChannelIdentifier channelIdentifier,
+        [ActionParameter] MessageIdentifier messageIdentifier,
+        [ActionParameter] SendMessageRequest input)
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
-        var requestBody = await CreateChannelMessage(client, input);
+        var requestBody = await CreateChannelMessage(client, input, teamChannel);
 
         try
         {
@@ -139,9 +146,12 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         }
     }
 
-    private async Task<ChatMessage> CreateChannelMessage(MSTeamsClient client, SendMessageRequest input)
+    private async Task<ChatMessage> CreateChannelMessage(
+        MSTeamsClient client,
+        SendMessageRequest input,
+        TeamChannel teamChannel)
     {
-         var requestBody = new ChatMessage
+        var requestBody = new ChatMessage
         {
             Body = new ItemBody
             {
@@ -155,37 +165,25 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         {
             if (input.AttachmentFile is not null || input.OneDriveAttachmentFileId is not null)
             {
-                var drive = await client.Me.Drive.GetAsync();
-
                 if (input.OneDriveAttachmentFileId is not null)
-                {
-                    var oneDriveAttachmentFile = await client.Drives[drive.Id].Items[input.OneDriveAttachmentFileId].GetAsync();
-                    var attachmentId = oneDriveAttachmentFile.ETag.Split("{")[1].Split("}")[0];
-                    requestBody.Attachments.Add(new()
-                    {
-                        Id = attachmentId,
-                        ContentType = "reference",
-                        ContentUrl = oneDriveAttachmentFile.WebUrl,
-                        Name = oneDriveAttachmentFile.Name
-                    });
-                    requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
-                }
+                    throw new PluginApplicationException("OneDrive attachments are not supported for channel messages. Please use Attachment file instead.");
 
                 if (input.AttachmentFile is not null)
                 {
-                    var attachmentFile = await UploadFile(input.AttachmentFile);
+                    var attachmentFile = await UploadFile(input.AttachmentFile, teamChannel);
                     var attachmentId = attachmentFile.ETag.Split("{")[1].Split("}")[0];
-                    var webUrl = Path.GetExtension(attachmentFile.Name) == ".docx"
-                            ? attachmentFile.WebUrl.Split("&action")[0]
-                            : attachmentFile.WebUrl;
+                    var webUrl = Path.GetExtension(attachmentFile.Name).Equals(".docx", StringComparison.OrdinalIgnoreCase)
+                        ? attachmentFile.WebUrl.Split("&action")[0]
+                        : attachmentFile.WebUrl;
 
-                    requestBody.Attachments.Add(new()
+                    requestBody.Attachments.Add(new ChatMessageAttachment
                     {
                         Id = attachmentId,
                         ContentType = "reference",
                         ContentUrl = webUrl,
                         Name = attachmentFile.Name
                     });
+
                     requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
                 }
             }
@@ -200,32 +198,33 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         {
             throw new PluginApplicationException($"An error occurred : {ex.Message}");
         }
-    } 
-    
-    private async Task<DriveItem> UploadFile(FileReference file)
-    {
-        const string teamsFilesFolderName = "Microsoft Teams Chat Files";
-        const int chunkSize = 3932160; 
-        
-        var client = new MSTeamsClient(InvocationContext.AuthenticationCredentialsProviders);
-        var drive = await client.Me.Drive.GetAsync();
-        var root = await client.Drives[drive.Id].Root.GetAsync();
-        var folders = await client.Drives[drive.Id].Items[root.Id].Children.GetAsync();
-        var teamsFilesFolder = folders.Value.FirstOrDefault(folder =>
-            folder.Folder is not null && folder.Name == teamsFilesFolderName);
+    }
 
-        if (teamsFilesFolder is null)
-            teamsFilesFolder = await client.Drives[drive.Id].Items[root.Id].Children.PostAsync(new DriveItem
-            {
-                Name = teamsFilesFolderName,
-                Folder = new Folder()
-            });
-        
+    private async Task<DriveItem> UploadFile(FileReference file, TeamChannel teamChannel)
+    {
+        const int chunkSize = 3932160;
+
+        var client = new MSTeamsClient(InvocationContext.AuthenticationCredentialsProviders);
+
+        var channelFolder = await client.Teams[teamChannel.TeamId]
+            .Channels[teamChannel.ChannelId]
+            .FilesFolder
+            .GetAsync();
+
+        if (channelFolder is null)
+            throw new PluginApplicationException("Could not resolve the channel files folder.");
+
+        if (string.IsNullOrEmpty(channelFolder.Id))
+            throw new PluginApplicationException("Could not resolve the channel folder ID.");
+
+        if (string.IsNullOrEmpty(channelFolder.ParentReference?.DriveId))
+            throw new PluginApplicationException("Could not resolve the channel SharePoint drive ID.");
+
         var fileStream = await _fileManagementClient.DownloadAsync(file);
         var fileMemoryStream = new MemoryStream();
         await fileStream.CopyToAsync(fileMemoryStream);
         fileMemoryStream.Position = 0;
-        
+
         var uploadSessionRequestBody = new CreateUploadSessionPostRequestBody
         {
             Item = new DriveItemUploadableProperties
@@ -236,13 +235,21 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
                 }
             }
         };
-            
-        var uploadSession = await client.Drives[drive.Id].Items[teamsFilesFolder.Id].ItemWithPath(file.Name)
-            .CreateUploadSession.PostAsync(uploadSessionRequestBody);
+
+        var uploadSession = await client.Drives[channelFolder.ParentReference.DriveId]
+            .Items[channelFolder.Id]
+            .ItemWithPath(file.Name)
+            .CreateUploadSession
+            .PostAsync(uploadSessionRequestBody);
 
         var fileUploadTask =
             new LargeFileUploadTask<DriveItem>(uploadSession, fileMemoryStream, chunkSize, client.RequestAdapter);
+
         var uploadResult = await fileUploadTask.UploadAsync();
+
+        if (!uploadResult.UploadSucceeded || uploadResult.ItemResponse is null)
+            throw new PluginApplicationException("Failed to upload the file to the channel SharePoint folder.");
+
         return uploadResult.ItemResponse;
     }
 }
