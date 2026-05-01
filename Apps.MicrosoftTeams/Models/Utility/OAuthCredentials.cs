@@ -20,16 +20,10 @@ public class OAuthCredentials
             ? "https://login.microsoftonline.com/common/oauth2/v2.0" 
             : $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0";
 
-        string scopes;
-        if (values.GetValueOrDefault(CredNames.ConnectionType) != ConnectionTypes.OAuthMessagesOnly)
-        {
-            var adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() ?? "no";
-            scopes = adminPermission == "yes"
-                ? ApplicationConstants.FullScope
-                : ApplicationConstants.LimitedScope;
-        }
-        else
-            scopes = ApplicationConstants.MessagesOnlyScope;
+        string adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() ?? "no";
+        string scopes = adminPermission == "yes" 
+            ? ApplicationConstants.FullScope
+            : ApplicationConstants.LimitedScope;
 
         return new OAuthCredentials
         {

@@ -28,13 +28,6 @@ public class ConnectionDefinition : IConnectionDefinition
         },
         new()
         {
-            Name = ConnectionTypes.OAuthMessagesOnly,
-            DisplayName = "OAuth2 (Send messages only)",
-            AuthenticationType = ConnectionAuthenticationType.OAuth2,
-            ConnectionProperties = []
-        },
-        new()
-        {
             Name = ConnectionTypes.OAuthAzure,
             DisplayName = "OAuth2 (Azure app)",
             AuthenticationType = ConnectionAuthenticationType.OAuth2,
