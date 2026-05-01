@@ -30,7 +30,8 @@ public class ConnectionDefinition : IConnectionDefinition
         {
             Name = ConnectionTypes.OAuthMessagesOnly,
             DisplayName = "OAuth2 (Send messages only)",
-            AuthenticationType = ConnectionAuthenticationType.OAuth2
+            AuthenticationType = ConnectionAuthenticationType.OAuth2,
+            ConnectionProperties = []
         },
         new()
         {
