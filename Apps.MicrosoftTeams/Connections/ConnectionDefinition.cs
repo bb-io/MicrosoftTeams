@@ -44,7 +44,16 @@ public class ConnectionDefinition : IConnectionDefinition
                 },
                 new(CredNames.AzureClientId) { DisplayName = "Application (client) ID" },
                 new(CredNames.AzureTenantId) { DisplayName = "Directory (tenant) ID" },
-                new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true }
+                new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true },
+                new(CredNames.MessagesOnlyPermissions)
+                {
+                    DisplayName = "Chats, channels and messages only scopes",
+                    DataItems =
+                    [
+                        new("yes", "Yes"),
+                        new("no", "No")
+                    ]
+                },
             ]
         }
     };
@@ -52,7 +61,16 @@ public class ConnectionDefinition : IConnectionDefinition
     public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
         Dictionary<string, string> values)
     {
-        var token = values.First(v => v.Key == "access_token");
-        yield return new AuthenticationCredentialsProvider("Authorization", $"{token.Value}");
+        string token = values.First(v => v.Key == "access_token").Value;
+        var providers = new List<AuthenticationCredentialsProvider> { new("Authorization", token) };
+        
+        var connectionType = values[nameof(ConnectionPropertyGroup)] switch
+        {
+            var ct when ConnectionTypes.SupportedConnectionTypes.Contains(ct) => ct,
+            _ => throw new Exception($"Unknown connection type: {values[nameof(ConnectionPropertyGroup)]}")
+        };
+
+        providers.Add(new AuthenticationCredentialsProvider(CredNames.ConnectionType, connectionType));
+        return providers;
     }
 }
