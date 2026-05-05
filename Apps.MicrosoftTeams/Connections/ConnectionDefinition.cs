@@ -33,6 +33,15 @@ public class ConnectionDefinition : IConnectionDefinition
             AuthenticationType = ConnectionAuthenticationType.OAuth2,
             ConnectionProperties =
             [
+                new(CredNames.MessagesOnlyPermissions)
+                {
+                    DisplayName = "Chats, channels and messages only scopes",
+                    DataItems =
+                    [
+                        new("yes", "Yes"),
+                        new("no", "No")
+                    ]
+                },
                 new(CredNames.AdminPermissionRequired)
                 {
                     DisplayName = "Channel messages scope required",
@@ -44,16 +53,7 @@ public class ConnectionDefinition : IConnectionDefinition
                 },
                 new(CredNames.AzureClientId) { DisplayName = "Application (client) ID" },
                 new(CredNames.AzureTenantId) { DisplayName = "Directory (tenant) ID" },
-                new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true },
-                new(CredNames.MessagesOnlyPermissions)
-                {
-                    DisplayName = "Chats, channels and messages only scopes",
-                    DataItems =
-                    [
-                        new("yes", "Yes"),
-                        new("no", "No")
-                    ]
-                },
+                new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true }
             ]
         }
     };
