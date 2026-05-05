@@ -61,7 +61,7 @@ public class ConnectionDefinition : IConnectionDefinition
     public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
         Dictionary<string, string> values)
     {
-        string token = values.First(v => v.Key == "access_token").Value;
+        string token = values.First(v => v.Key == CredNames.AccessToken).Value;
         var providers = new List<AuthenticationCredentialsProvider> { new("Authorization", token) };
         
         var connectionType = values[nameof(ConnectionPropertyGroup)] switch
