@@ -22,7 +22,6 @@ namespace Apps.MicrosoftTeams.Actions;
 public class ChannelActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseInvocable(invocationContext)
 {
     private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
-    private readonly IFileManagementClient _fileManagementClient = fileManagementClient;
 
     [Action("Get channel message", Description = "Get channel message")]
     public async Task<ChannelMessageDto> GetChannelMessage([ActionParameter] ChannelIdentifier channelIdentifier,
@@ -76,7 +75,7 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
                 await fileContentStream.CopyToAsync(memoryStream);
                 memoryStream.Position = 0;
 
-                var file = await _fileManagementClient.UploadAsync(memoryStream, fileData.File.MimeType, fileData.Name);
+                var file = await fileManagementClient.UploadAsync(memoryStream, fileData.File.MimeType, fileData.Name);
                 resultFiles.Add(file);
             }
 
@@ -220,7 +219,7 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         if (string.IsNullOrEmpty(channelFolder.ParentReference?.DriveId))
             throw new PluginApplicationException("Could not resolve the channel SharePoint drive ID.");
 
-        var fileStream = await _fileManagementClient.DownloadAsync(file);
+        var fileStream = await fileManagementClient.DownloadAsync(file);
         var fileMemoryStream = new MemoryStream();
         await fileStream.CopyToAsync(fileMemoryStream);
         fileMemoryStream.Position = 0;

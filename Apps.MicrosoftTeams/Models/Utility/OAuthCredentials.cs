@@ -16,16 +16,20 @@ public class OAuthCredentials
         var secret = values.GetValueOrDefault(CredNames.AzureClientSecret) ?? ApplicationConstants.ClientSecret;
         var tenantId = values.GetValueOrDefault(CredNames.AzureTenantId);
 
-        string baseAuthUrl;
-        if (tenantId is null)
-            baseAuthUrl = "https://login.microsoftonline.com/common/oauth2/v2.0";
-        else
-            baseAuthUrl = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0";
+        string baseAuthUrl = tenantId is null 
+            ? "https://login.microsoftonline.com/common/oauth2/v2.0" 
+            : $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0";
 
-        var adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() ?? "no";
-        var scopes = adminPermission == "yes"
-            ? ApplicationConstants.FullScope
-            : ApplicationConstants.LimitedScope;
+        string scopes;
+        string messagesOnlyScopes = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() ?? "no";
+        string adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() ?? "no";
+
+        if (messagesOnlyScopes == "yes")
+            scopes = ApplicationConstants.MessagesOnlyScope;
+        else if (adminPermission == "yes")
+            scopes = ApplicationConstants.LimitedScope;
+        else
+            scopes = ApplicationConstants.FullScope;
 
         return new OAuthCredentials
         {
