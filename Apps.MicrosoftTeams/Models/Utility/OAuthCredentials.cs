@@ -12,6 +12,7 @@ public class OAuthCredentials
 
     public static OAuthCredentials GetOAuthCredentials(Dictionary<string, string> values)
     {
+        string? connectionType = values.GetValueOrDefault(CredNames.CustomScopes);
         var clientId = values.GetValueOrDefault(CredNames.AzureClientId) ?? ApplicationConstants.ClientId;
         var secret = values.GetValueOrDefault(CredNames.AzureClientSecret) ?? ApplicationConstants.ClientSecret;
         var tenantId = values.GetValueOrDefault(CredNames.AzureTenantId);
@@ -21,12 +22,14 @@ public class OAuthCredentials
             : $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0";
 
         string scopes;
-        string messagesOnlyScopes = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() ?? "no";
-        string adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() ?? "no";
+        bool messagesOnlyScopes = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() == "yes";
+        bool adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() == "yes";
 
-        if (messagesOnlyScopes == "yes")
+        if (string.Equals(connectionType, ConnectionTypes.OAuthAzureCustomScopes, StringComparison.OrdinalIgnoreCase))
+            scopes = values.GetValueOrDefault(CredNames.CustomScopes) ?? ApplicationConstants.FullScope;
+        else if (messagesOnlyScopes)
             scopes = ApplicationConstants.MessagesOnlyScope;
-        else if (adminPermission == "yes")
+        else if (adminPermission)
             scopes = ApplicationConstants.LimitedScope;
         else
             scopes = ApplicationConstants.FullScope;

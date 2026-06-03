@@ -55,6 +55,19 @@ public class ConnectionDefinition : IConnectionDefinition
                 new(CredNames.AzureTenantId) { DisplayName = "Directory (tenant) ID" },
                 new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true }
             ]
+        },
+        new()
+        {
+            Name = ConnectionTypes.OAuthAzureCustomScopes,
+            DisplayName = "OAuth2 (Azure app) with custom scopes",
+            AuthenticationType = ConnectionAuthenticationType.OAuth2,
+            ConnectionProperties =
+            [
+                new(CredNames.AzureClientId) { DisplayName = "Application (client) ID" },
+                new(CredNames.AzureTenantId) { DisplayName = "Directory (tenant) ID" },
+                new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true },
+                new(CredNames.CustomScopes) { DisplayName = "Custom scopes" },
+            ]
         }
     };
 
