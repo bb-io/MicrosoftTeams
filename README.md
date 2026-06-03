@@ -56,6 +56,7 @@ If you want to use a custom Azure application for authorization, you should do t
     * _If you don't need to manage channel messages_, select the following: 
       User.Read, User.ReadBasic.All, Team.ReadBasic.All, Channel.ReadBasic.All, Chat.ReadWrite, ChannelMessage.Send, 
       Files.ReadWrite, offline_access
+    * You can also choose your own set of scopes and use them with the `OAuth2 (Azure app) with custom scopes` connection type.
 - Go to _Manage_ > _Authentication_ and click _Add a platform_. Choose _Web_ and enter this redirect URI: https://bridge.blackbird.io/api/AuthorizationCode
 - Go to _Manage_ > _Certificates & secrets_ and click _New client secret_. Enter a description (optional) and set the expiration time. **Copy the created secret value, as you won't be able to see it again**.
 - Go to _Overview_ and copy the _Application (client) ID_ and _Directory (tenant) ID_. Use these values to register your connection in Blackbird.
@@ -85,7 +86,17 @@ and _No_ if not.
 3. Enter the _Application (client) ID_, _Directory (tenant) ID_ and _Client secret_ obtained from your custom Azure app.
 4. Follow the instructions that Microsoft gives you, authorizing Blackbird.io to act on your behalf.
 5. When you return to Blackbird, confirm that the connection has appeared and the status is _Connected_.
+
 ![Connecting using Azure app](image/README/azure.png)
+
+### OAuth2 (Azure app) with custom scopes
+
+1. Enter the _Application (client) ID_, _Directory (tenant) ID_ and _Client secret_ obtained from your custom Azure app.
+2. Enter your Azure app scopes, space-separated. Example: `Team.ReadBasic.All Channel.ReadBasic.All Chat.Read`.
+3. Follow the instructions that Microsoft gives you, authorizing Blackbird.io to act on your behalf.
+4. When you return to Blackbird, confirm that the connection has appeared and the status is _Connected_.
+ 
+![Connecting using Azure app](image/README/azure_customscopes.png)
 
 ## Actions
 
