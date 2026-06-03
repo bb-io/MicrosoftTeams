@@ -74,9 +74,11 @@ public class ConnectionDefinition : IConnectionDefinition
     public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
         Dictionary<string, string> values)
     {
-        string token = values.First(v => v.Key == CredNames.AccessToken).Value;
-        var providers = new List<AuthenticationCredentialsProvider> { new("Authorization", token) };
-        
+        var providers = values.Select(v => new AuthenticationCredentialsProvider(v.Key, v.Value)).ToList();
+
+        if (values.TryGetValue(CredNames.AccessToken, out var token))
+            providers.Add(new AuthenticationCredentialsProvider("Authorization", token));
+    
         var connectionType = values[nameof(ConnectionPropertyGroup)] switch
         {
             var ct when ConnectionTypes.SupportedConnectionTypes.Contains(ct) => ct,
