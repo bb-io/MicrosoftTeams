@@ -1,5 +1,5 @@
 ﻿using Apps.MicrosoftTeams.Constants;
-using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Connections;
 
 namespace Apps.MicrosoftTeams.Models.Utility;
 
@@ -13,7 +13,13 @@ public class OAuthCredentials
 
     public static OAuthCredentials GetOAuthCredentials(Dictionary<string, string> values)
     {
-        string? connectionType = values.GetValueOrDefault(CredNames.ConnectionType);
+        string connectionType = values[nameof(ConnectionPropertyGroup)] switch
+        {
+            var ct when ConnectionTypes.SupportedConnectionTypes.Contains(ct) => ct,
+            _ => throw new Exception(
+                $"Unknown connection type in OAuthCredentials class: {values[nameof(ConnectionPropertyGroup)]}")
+        };
+        
         var clientId = values.GetValueOrDefault(CredNames.AzureClientId) ?? ApplicationConstants.ClientId;
         var secret = values.GetValueOrDefault(CredNames.AzureClientSecret) ?? ApplicationConstants.ClientSecret;
         var tenantId = values.GetValueOrDefault(CredNames.AzureTenantId);
@@ -27,10 +33,7 @@ public class OAuthCredentials
         bool adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() == "yes";
 
         if (string.Equals(connectionType, ConnectionTypes.OAuthAzureCustomScopes, StringComparison.OrdinalIgnoreCase))
-        {
             scopes = values.GetValueOrDefault(CredNames.CustomScopes) ?? ApplicationConstants.FullScope;
-            throw new PluginApplicationException($"The requested scopes are: {scopes}");
-        }
         else if (messagesOnlyScopes)
             scopes = ApplicationConstants.MessagesOnlyScope;
         else if (adminPermission)
