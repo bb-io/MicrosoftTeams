@@ -1,4 +1,5 @@
 ﻿using Apps.MicrosoftTeams.Constants;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams.Models.Utility;
 
@@ -26,7 +27,10 @@ public class OAuthCredentials
         bool adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() == "yes";
 
         if (string.Equals(connectionType, ConnectionTypes.OAuthAzureCustomScopes, StringComparison.OrdinalIgnoreCase))
+        {
             scopes = values.GetValueOrDefault(CredNames.CustomScopes) ?? ApplicationConstants.FullScope;
+            throw new PluginApplicationException($"The requested scopes are: {scopes}");
+        }
         else if (messagesOnlyScopes)
             scopes = ApplicationConstants.MessagesOnlyScope;
         else if (adminPermission)
