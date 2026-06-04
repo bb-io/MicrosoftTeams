@@ -55,15 +55,30 @@ public class ConnectionDefinition : IConnectionDefinition
                 new(CredNames.AzureTenantId) { DisplayName = "Directory (tenant) ID" },
                 new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true }
             ]
+        },
+        new()
+        {
+            Name = ConnectionTypes.OAuthAzureCustomScopes,
+            DisplayName = "OAuth2 (Azure app) with custom scopes",
+            AuthenticationType = ConnectionAuthenticationType.OAuth2,
+            ConnectionProperties =
+            [
+                new(CredNames.AzureClientId) { DisplayName = "Application (client) ID" },
+                new(CredNames.AzureTenantId) { DisplayName = "Directory (tenant) ID" },
+                new(CredNames.AzureClientSecret) { DisplayName = "Client secret", Sensitive = true },
+                new(CredNames.CustomScopes) { DisplayName = "Custom scopes" },
+            ]
         }
     };
 
     public IEnumerable<AuthenticationCredentialsProvider> CreateAuthorizationCredentialsProviders(
         Dictionary<string, string> values)
     {
-        string token = values.First(v => v.Key == CredNames.AccessToken).Value;
-        var providers = new List<AuthenticationCredentialsProvider> { new("Authorization", token) };
-        
+        var providers = values.Select(v => new AuthenticationCredentialsProvider(v.Key, v.Value)).ToList();
+
+        if (values.TryGetValue(CredNames.AccessToken, out var token))
+            providers.Add(new AuthenticationCredentialsProvider("Authorization", token));
+    
         var connectionType = values[nameof(ConnectionPropertyGroup)] switch
         {
             var ct when ConnectionTypes.SupportedConnectionTypes.Contains(ct) => ct,

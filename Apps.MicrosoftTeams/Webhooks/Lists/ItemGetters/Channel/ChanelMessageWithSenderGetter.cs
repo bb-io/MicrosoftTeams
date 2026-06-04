@@ -21,9 +21,8 @@ public class ChannelMessageWithSenderGetter : ItemGetter<ChannelMessageDto>
     public override async Task<ChannelMessageDto?> GetItem(EventPayload eventPayload)
     {
         var client = new MSTeamsClient(AuthenticationCredentialsProviders);
-        var teamId = GetIdFromEndpoint(eventPayload.ResourceData.Endpoint, "teams");
-        var channelId = GetIdFromEndpoint(eventPayload.ResourceData.Endpoint, "channels");
-        var message = await client.Teams[teamId].Channels[channelId].Messages[eventPayload.ResourceData.Id].GetAsync();
+        var resource = ChannelMessageResource.Parse(eventPayload);
+        var message = await ChannelMessageReader.GetAsync(client, resource);
 
         if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
         {
