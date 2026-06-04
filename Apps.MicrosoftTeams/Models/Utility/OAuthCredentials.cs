@@ -12,7 +12,7 @@ public class OAuthCredentials
 
     public static OAuthCredentials GetOAuthCredentials(Dictionary<string, string> values)
     {
-        string? connectionType = values.GetValueOrDefault(CredNames.CustomScopes);
+        string? connectionType = values.GetValueOrDefault(CredNames.ConnectionType);
         var clientId = values.GetValueOrDefault(CredNames.AzureClientId) ?? ApplicationConstants.ClientId;
         var secret = values.GetValueOrDefault(CredNames.AzureClientSecret) ?? ApplicationConstants.ClientSecret;
         var tenantId = values.GetValueOrDefault(CredNames.AzureTenantId);
@@ -22,7 +22,7 @@ public class OAuthCredentials
             : $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0";
 
         string scopes;
-        bool messagesOnlyScopes = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() == "yes";
+        bool messagesOnlyScopes = values.GetValueOrDefault(CredNames.MessagesOnlyPermissions)?.ToLower() == "yes";
         bool adminPermission = values.GetValueOrDefault(CredNames.AdminPermissionRequired)?.ToLower() == "yes";
 
         if (string.Equals(connectionType, ConnectionTypes.OAuthAzureCustomScopes, StringComparison.OrdinalIgnoreCase))
