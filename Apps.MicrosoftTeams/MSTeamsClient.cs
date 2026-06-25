@@ -9,7 +9,7 @@ namespace Apps.MicrosoftTeams;
 public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> creds)
     : GraphServiceClient(GetAuthenticationProvider(creds))
 {
-    public async Task ValidateConnection(CancellationToken cancellationToken)
+    public Task ValidateConnection(CancellationToken cancellationToken)
     {
         var scopes = creds.FirstOrDefault(c => c.KeyName == CredNames.CustomScopes)?.Value ?? string.Empty;
         
@@ -28,7 +28,7 @@ public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> creds)
                 "Could not validate the connection. Please ensure the 'User.Read' scope is enabled and inputted")
         };
 
-        await validation;
+        return validation;
     }
 
     private static bool Has(string scopes, string scope) => scopes.Contains(scope, StringComparison.OrdinalIgnoreCase);
