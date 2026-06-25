@@ -1,12 +1,38 @@
-﻿using Microsoft.Graph;
+﻿using Apps.MicrosoftTeams.Constants;
+using Microsoft.Graph;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams;
 
 public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> creds)
     : GraphServiceClient(GetAuthenticationProvider(creds))
 {
+    public Task ValidateConnection(CancellationToken cancellationToken)
+    {
+        var scopes = creds.FirstOrDefault(c => c.KeyName == CredNames.CustomScopes)?.Value ?? string.Empty;
+        
+        Task validation = scopes switch
+        {
+            _ when string.IsNullOrWhiteSpace(scopes) || Has(scopes, "User.Read")
+                => Me.GetAsync(cancellationToken: cancellationToken),
+            
+            _ when Has(scopes, "Chat")
+                => Me.Chats.GetAsync(r => r.QueryParameters.Top = 1, cancellationToken),
+
+            _ when Has(scopes, "Channel") || Has(scopes, "Team")
+                => Me.JoinedTeams.GetAsync(cancellationToken: cancellationToken),
+
+            _ => throw new PluginMisconfigurationException(
+                "Could not validate the connection. Please ensure the 'User.Read' scope is enabled and inputted")
+        };
+
+        return validation;
+    }
+
+    private static bool Has(string scopes, string scope) => scopes.Contains(scope, StringComparison.OrdinalIgnoreCase);
+    
     private static BaseBearerTokenAuthenticationProvider GetAuthenticationProvider(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
     {
         var token = authenticationCredentialsProviders.First(p => p.KeyName == "Authorization").Value;

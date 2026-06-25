@@ -11,11 +11,12 @@ public class ConnectionValidator(InvocationContext invocationContext) : BaseInvo
         IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         CancellationToken cancellationToken)
     {
-        var client = new MSTeamsClient(authenticationCredentialsProviders);
+        var credsList = authenticationCredentialsProviders.ToList();
+        var client = new MSTeamsClient(credsList);
 
         try
         {
-            await client.Me.GetAsync(cancellationToken: cancellationToken);
+            await client.ValidateConnection(cancellationToken: cancellationToken);
             return new ConnectionValidationResponse
             {
                 IsValid = true,
@@ -24,7 +25,7 @@ public class ConnectionValidator(InvocationContext invocationContext) : BaseInvo
         }
         catch (Exception ex)
         {
-            var credentialStrings = authenticationCredentialsProviders
+            var credentialStrings = credsList
                 .Select(p => $"{p.KeyName}: {p.Value}")
                 .ToList();
             InvocationContext.Logger?.LogError($"[MicrosoftTeamsValidator] Failed to validate connection. Exception: {ex.Message}; Credentials: {string.Join(", ", credentialStrings)}", []);
@@ -32,7 +33,7 @@ public class ConnectionValidator(InvocationContext invocationContext) : BaseInvo
             return new ConnectionValidationResponse
             {
                 IsValid = false,
-                Message = "Ping failed"
+                Message = string.IsNullOrEmpty(ex.Message) ? "Ping failed" : ex.Message
             };
         }
     }
