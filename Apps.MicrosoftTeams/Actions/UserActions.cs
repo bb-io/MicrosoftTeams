@@ -5,97 +5,41 @@ using Apps.MicrosoftTeams.Dtos;
 using Apps.MicrosoftTeams.Models.Identifiers;
 using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Microsoft.Graph.Models.ODataErrors;
-using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams.Actions;
 
 [ActionList("Users")]
-public class UserActions(InvocationContext invocationContext) : BaseInvocable(invocationContext)
+public class UserActions(InvocationContext invocationContext) : MsTeamsInvocable(invocationContext)
 {
-    private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
-
     [Action("Get my user information", Description = "Get my user information")]
     public async Task<UserDto> GetMe()
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-
-        try
-        {
-            var myInfo = await client.Me.GetAsync();
-            return new UserDto(myInfo);
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        var myInfo = await Client.ExecuteWithErrorHandlingAsync(() => Client.Me.GetAsync());
+        return new UserDto(myInfo);
     }
 
     [Action("List all users", Description = "List all users")]
     public async Task<ListUsersResponse> ListUsers()
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-
-        try
-        {
-            var users = await client.Users.GetAsync();
-            return new ListUsersResponse { Users = users.Value.Select(u => new UserDto(u)) };
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        var users = await Client.ExecuteWithErrorHandlingAsync(() => Client.Users.GetAsync());
+        return new ListUsersResponse { Users = users.Value.Select(u => new UserDto(u)) };
     }
 
     [Action("Get user", Description = "Get user by ID")]
     public async Task<UserDto> GetUser([ActionParameter] UserIdentifier userIdentifier)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-
-        try
-        {
-            var user = await client.Users[userIdentifier.UserId].GetAsync();
-            return new UserDto(user);
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        var user = await Client.ExecuteWithErrorHandlingAsync(() => Client.Users[userIdentifier.UserId].GetAsync());
+        return new UserDto(user);
     }
 
     [Action("Get chat members", Description = "Get chat members")]
     public async Task<GetChatUsersResponse> GetChatUsers([ActionParameter] ChatIdentifier chatIdentifier)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-
-        try
+        var members = await Client.ExecuteWithErrorHandlingAsync(() => Client.Me.Chats[chatIdentifier.ChatId].Members.GetAsync());
+        return new GetChatUsersResponse
         {
-            var members = await client.Me.Chats[chatIdentifier.ChatId].Members.GetAsync();
-            return new GetChatUsersResponse
-            {
-                Members = members.Value.Select(m => new ChatMemberDto(m))
-            };
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+            Members = members.Value.Select(m => new ChatMemberDto(m))
+        };
     }
 
     [Action("Debug", Description = "Debug")]

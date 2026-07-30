@@ -26,7 +26,8 @@ public class ChatMessageWithUserMentionedGetter : ItemGetter<ChatMessageDto>
             return null;
         
         var client = new MSTeamsClient(AuthenticationCredentialsProviders);
-        var message = await client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync();
+        var message = await client.ExecuteWithErrorHandlingAsync(() =>
+            client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync());
         
         if (!message.Mentions.Any(user => user.Mentioned.User.Id == _user.UserId))
             return null;

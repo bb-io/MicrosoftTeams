@@ -27,7 +27,8 @@ public class ChatMessageWithSenderGetter : ItemGetter<ChatMessageDto>
             return null;
         
         var client = new MSTeamsClient(AuthenticationCredentialsProviders);
-        var message = await client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync();
+        var message = await client.ExecuteWithErrorHandlingAsync(() =>
+            client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync());
         
         if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
             return null;

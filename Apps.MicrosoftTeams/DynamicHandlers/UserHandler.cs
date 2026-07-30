@@ -11,14 +11,16 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
             CancellationToken cancellationToken)
         {
             var client = new MSTeamsClient(InvocationContext.AuthenticationCredentialsProviders);
-            var users = await client.Users.GetAsync(requestConfiguration =>
-            {
-                if (!string.IsNullOrWhiteSpace(context.SearchString))
+            var users = await client.ExecuteWithErrorHandlingAsync(() => 
+                client.Users.GetAsync(requestConfiguration =>
                 {
+                    if (string.IsNullOrWhiteSpace(context.SearchString)) 
+                        return;
+                    
                     requestConfiguration.QueryParameters.Search = $"\"displayName:{context.SearchString}\"";
                     requestConfiguration.Headers.Add("ConsistencyLevel", "eventual");
-                }
-            }, cancellationToken);
+                }, cancellationToken));
+            
             return users.Value.ToDictionary(k => k.Id, v => v.DisplayName);
         }
     }
