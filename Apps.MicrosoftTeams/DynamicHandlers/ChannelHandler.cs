@@ -12,12 +12,14 @@ public class ChannelHandler(InvocationContext invocationContext)
         CancellationToken cancellationToken)
     {
         var client = new MSTeamsClient(InvocationContext.AuthenticationCredentialsProviders);
-        var joinedTeams = await client.Me.JoinedTeams.GetAsync(cancellationToken: cancellationToken);
+        var joinedTeams = await client.ExecuteWithErrorHandlingAsync(() => 
+            client.Me.JoinedTeams.GetAsync(cancellationToken: cancellationToken));
         var channels = new Dictionary<string, string>();
 
         foreach (var team in joinedTeams.Value)
         {
-            var teamChannels = await client.Teams[team.Id].Channels.GetAsync(cancellationToken: cancellationToken);
+            var teamChannels = await client.ExecuteWithErrorHandlingAsync(() =>
+                client.Teams[team.Id].Channels.GetAsync(cancellationToken: cancellationToken));
 
             foreach (var channel in teamChannels.Value)
             {

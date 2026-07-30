@@ -5,14 +5,12 @@ using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Microsoft.Graph;
 using Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
 using Microsoft.Graph.Models;
-using Microsoft.Graph.Models.ODataErrors;
 
 namespace Apps.MicrosoftTeams.Actions;
 
@@ -20,7 +18,6 @@ namespace Apps.MicrosoftTeams.Actions;
 public class ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseInvocable(invocationContext)
 {
     private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
-    private readonly IFileManagementClient _fileManagementClient = fileManagementClient;
 
     [Action("List chats", Description = "List chats")]
     public async Task<ListChatsResponse> ListChats()
@@ -29,49 +26,34 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var top = 50;
         var allChats = new List<Chat>();
         
-        try
+        var chats = await client.ExecuteWithErrorHandlingAsync(() => 
+            client.Me.Chats.GetAsync(requestConfiguration => { requestConfiguration.QueryParameters.Top = top; }));
+        
+        var maxIterations = 10;
+        while (chats?.Value != null && maxIterations > 0)
         {
-            var chats = await client.Me.Chats.GetAsync(requestConfiguration =>
-            {
-                requestConfiguration.QueryParameters.Top = top;
-            });
-            
-            var maxIterations = 10;
-            while (chats?.Value != null && maxIterations > 0)
-            {
-                allChats.AddRange(chats.Value);
+            allChats.AddRange(chats.Value);
 
-                if (chats.Value.Count == 0)
-                {
-                    break;
-                }
-
-                if (!string.IsNullOrEmpty(chats.OdataNextLink))
-                {
-                    chats = await client.Me.Chats
-                        .WithUrl(chats.OdataNextLink)
-                        .GetAsync();
-                    maxIterations--;
-                }
-                else
-                {
-                    break;
-                }
+            if (chats.Value.Count == 0)
+            {
+                break;
             }
-            
-            return new ListChatsResponse
+
+            if (!string.IsNullOrEmpty(chats.OdataNextLink))
             {
-                Chats = allChats.Select(chat => new ChatDto(chat)).ToList()
-            };
+                chats = await client.ExecuteWithErrorHandlingAsync(() => client.Me.Chats.WithUrl(chats.OdataNextLink).GetAsync());
+                maxIterations--;
+            }
+            else
+            {
+                break;
+            }
         }
-        catch (ODataError error)
+        
+        return new ListChatsResponse
         {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+            Chats = allChats.Select(chat => new ChatDto(chat)).ToList()
+        };
     }
 
     [Action("Get chat message", Description = "Get chat message")]
@@ -80,19 +62,13 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
 
-        try
-        {
-            var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
-            return new ChatMessageDto(message);
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        var message = await client.ExecuteWithErrorHandlingAsync(() => 
+            client.Me
+                .Chats[chatIdentifier.ChatId]
+                .Messages[messageIdentifier.MessageId]
+                .GetAsync());
+        
+        return new ChatMessageDto(message);
     }
         
     [Action("Download files attached to chat message", Description = "Download files attached to chat message")]
@@ -102,38 +78,34 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
 
-        try
+        var message = await client.ExecuteWithErrorHandlingAsync(() => 
+            client.Me
+                .Chats[chatIdentifier.ChatId]
+                .Messages[messageIdentifier.MessageId]
+                .GetAsync());
+        
+        var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
+        var resultFiles = new List<FileReference>();
+
+        foreach (var attachment in fileAttachments)
         {
-            var message = await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].GetAsync();
-            var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
-            var resultFiles = new List<FileReference>();
+            var sharingUrl = attachment.ContentUrl;
+            var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
+            var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
+            var fileData = await client.ExecuteWithErrorHandlingAsync(() => client.Shares[encodedUrl].DriveItem.GetAsync());
 
-            foreach (var attachment in fileAttachments)
-            {
-                var sharingUrl = attachment.ContentUrl;
-                var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
-                var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
-                var fileData = await client.Shares[encodedUrl].DriveItem.GetAsync();
-
-                var fileContentStream = await client.Shares[encodedUrl].DriveItem.Content.GetAsync();
-                var memoryStream = new MemoryStream();
-                await fileContentStream.CopyToAsync(memoryStream);
-                memoryStream.Position = 0;
-
-                var file = await _fileManagementClient.UploadAsync(memoryStream, fileData.File.MimeType, fileData.Name);
-                resultFiles.Add(file);
-            }
+            var fileContentStream = await client.ExecuteWithErrorHandlingAsync(() =>
+                client.Shares[encodedUrl].DriveItem.Content.GetAsync());
             
-            return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
+            var memoryStream = new MemoryStream();
+            await fileContentStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            var file = await fileManagementClient.UploadAsync(memoryStream, fileData.File.MimeType, fileData.Name);
+            resultFiles.Add(file);
         }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        
+        return new DownloadFilesAttachedToMessageResponse { Files = resultFiles.Select(file => new FileDto(file)) };
     }
 
     [Action("Get the most recent chat messages", Description = "Get the most recent chat messages")]
@@ -141,23 +113,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] [Display("Messages amount")] int messagesAmount)
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
-
-        try
+        
+        var messages = await client.ExecuteWithErrorHandlingAsync(() => client.Me.Chats[chatIdentifier.ChatId].Messages.GetAsync());
+        return new GetLastMessages
         {
-            var messages = await client.Me.Chats[chatIdentifier.ChatId].Messages.GetAsync();
-            return new GetLastMessages
-            {
-                Messages = messages.Value.Take(messagesAmount).Select(m => new ChatMessageDto(m))
-            };
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+            Messages = messages.Value.Take(messagesAmount).Select(m => new ChatMessageDto(m))
+        };
     }
 
     [Action("Send message to chat", Description = "Send message to chat")]
@@ -167,19 +128,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var requestBody = await CreateChatMessage(client, input);
 
-        try
-        {
-            var sentMessage = await client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(requestBody);
-            return new ChatMessageDto(sentMessage);
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        var sentMessage = await client.ExecuteWithErrorHandlingAsync(() => 
+            client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(requestBody));
+        
+        return new ChatMessageDto(sentMessage);
     }
 
     [Action("Delete message from chat", Description = "Delete message from chat")]
@@ -188,18 +140,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
 
-        try
-        {
-            await client.Me.Chats[chatIdentifier.ChatId].Messages[messageIdentifier.MessageId].SoftDelete.PostAsync();
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        await client.ExecuteWithErrorHandlingAsync(() => 
+            client.Me
+                .Chats[chatIdentifier.ChatId]
+                .Messages[messageIdentifier.MessageId]
+                .SoftDelete
+                .PostAsync());
     }
         
     private async Task<ChatMessage> CreateChatMessage(MSTeamsClient client, SendMessageRequest input)
@@ -214,55 +160,49 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             Attachments = new List<ChatMessageAttachment>()
         };
 
-        try
-        {
-            if (input.AttachmentFile is not null || input.OneDriveAttachmentFileId is not null)
-            {
-                var drive = await client.Me.Drive.GetAsync();
-
-                if (input.OneDriveAttachmentFileId is not null)
-                {
-                    var oneDriveAttachmentFile = await client.Drives[drive.Id].Items[input.OneDriveAttachmentFileId].GetAsync();
-                    var attachmentId = oneDriveAttachmentFile.ETag.Split("{")[1].Split("}")[0];
-                    requestBody.Attachments.Add(new()
-                    {
-                        Id = attachmentId,
-                        ContentType = "reference",
-                        ContentUrl = oneDriveAttachmentFile.WebUrl,
-                        Name = oneDriveAttachmentFile.Name
-                    });
-                    requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
-                }
-
-                if (input.AttachmentFile is not null)
-                {
-                    var attachmentFile = await UploadFile(input.AttachmentFile);
-                    var attachmentId = attachmentFile.ETag.Split("{")[1].Split("}")[0];
-                    var webUrl = Path.GetExtension(attachmentFile.Name) == ".docx"
-                        ? attachmentFile.WebUrl.Split("&action")[0]
-                        : attachmentFile.WebUrl; 
-                        
-                    requestBody.Attachments.Add(new()
-                    {
-                        Id = attachmentId,
-                        ContentType = "reference",
-                        ContentUrl = webUrl,
-                        Name = attachmentFile.Name
-                    });
-                    requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
-                }
-            }
-
+        if (input.AttachmentFile is null && input.OneDriveAttachmentFileId is null) 
             return requestBody;
-        }
-        catch (ODataError error)
+        
+        var drive = await client.ExecuteWithErrorHandlingAsync(() => client.Me.Drive.GetAsync());
+
+        if (input.OneDriveAttachmentFileId is not null)
         {
-            throw new PluginApplicationException(error.Error.Message);
+            var oneDriveAttachmentFile = await client.ExecuteWithErrorHandlingAsync(() => 
+                client
+                    .Drives[drive.Id]
+                    .Items[input.OneDriveAttachmentFileId]
+                    .GetAsync());
+            
+            var attachmentId = oneDriveAttachmentFile.ETag.Split("{")[1].Split("}")[0];
+            requestBody.Attachments.Add(new()
+            {
+                Id = attachmentId,
+                ContentType = "reference",
+                ContentUrl = oneDriveAttachmentFile.WebUrl,
+                Name = oneDriveAttachmentFile.Name
+            });
+            requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
         }
-        catch (Exception ex)
+
+        if (input.AttachmentFile is not null)
         {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
+            var attachmentFile = await UploadFile(input.AttachmentFile);
+            var attachmentId = attachmentFile.ETag.Split("{")[1].Split("}")[0];
+            var webUrl = Path.GetExtension(attachmentFile.Name) == ".docx"
+                ? attachmentFile.WebUrl.Split("&action")[0]
+                : attachmentFile.WebUrl; 
+                    
+            requestBody.Attachments.Add(new()
+            {
+                Id = attachmentId,
+                ContentType = "reference",
+                ContentUrl = webUrl,
+                Name = attachmentFile.Name
+            });
+            requestBody.Body.Content += $"<attachment id=\"{attachmentId}\"></attachment>";
         }
+
+        return requestBody;
     }
         
     private async Task<DriveItem> UploadFile(FileReference file)
@@ -284,7 +224,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 Folder = new Folder()
             });
         
-        var fileStream = await _fileManagementClient.DownloadAsync(file);
+        var fileStream = await fileManagementClient.DownloadAsync(file);
         var fileMemoryStream = new MemoryStream();
         await fileStream.CopyToAsync(fileMemoryStream);
         fileMemoryStream.Position = 0;

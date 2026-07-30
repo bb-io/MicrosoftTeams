@@ -12,7 +12,7 @@ public class OneDriveFileHandler(InvocationContext invocationContext)
         CancellationToken cancellationToken)
     {
         var client = new MSTeamsClient(InvocationContext.AuthenticationCredentialsProviders);
-        var drive = await client.Me.Drive.GetAsync(cancellationToken: cancellationToken);
+        var drive = await client.ExecuteWithErrorHandlingAsync(() => client.Me.Drive.GetAsync(cancellationToken: cancellationToken));
         var filesDictionary = new Dictionary<string, string>();
         var filesAmount = 0;
         string? skipToken;
@@ -28,8 +28,12 @@ public class OneDriveFileHandler(InvocationContext invocationContext)
 
         do
         {
-            var files = await client.RequestAdapter.SendAsync(requestInformation,
-                ListItemCollectionResponse.CreateFromDiscriminatorValue, cancellationToken: cancellationToken);
+            var files = await client.ExecuteWithErrorHandlingAsync(() => 
+                client.RequestAdapter.SendAsync(
+                    requestInformation,
+                    ListItemCollectionResponse.CreateFromDiscriminatorValue, 
+                    cancellationToken: cancellationToken));
+            
             var filteredFiles = files.Value
                 .Select(item => item.DriveItem)
                 .Select(item => new { item.Id, Path = GetFilePath(item) })

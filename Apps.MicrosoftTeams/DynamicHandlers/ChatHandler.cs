@@ -12,20 +12,21 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
         {
             var contextInv = InvocationContext;
             var client = new MSTeamsClient(contextInv.AuthenticationCredentialsProviders);
-            var me = await client.Me.GetAsync(cancellationToken: cancellationToken);
+            var me = await client.ExecuteWithErrorHandlingAsync(() => client.Me.GetAsync(cancellationToken: cancellationToken));
 
             var allChats = new List<Chat>();
             var top = 50;
 
-            var chats = await client.Me.Chats.GetAsync(requestConfiguration =>
-            {
-                requestConfiguration.QueryParameters.Expand = new[] { "members" };
-                var filter = $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
-                             $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
-                requestConfiguration.QueryParameters.Filter = filter;
-                requestConfiguration.QueryParameters.Orderby = new[] { "lastMessagePreview/createdDateTime desc" };
-                requestConfiguration.QueryParameters.Top = top;
-            }, cancellationToken);
+            var chats = await client.ExecuteWithErrorHandlingAsync(() => 
+                client.Me.Chats.GetAsync(requestConfiguration =>
+                {
+                    requestConfiguration.QueryParameters.Expand = new[] { "members" };
+                    var filter = $"NOT(chatType eq 'meeting') and ((contains(topic, '{context.SearchString ?? ""}') or " +
+                                 $"(topic eq null and (members/any(x:contains(x/displayName, '{context.SearchString ?? ""}'))))))";
+                    requestConfiguration.QueryParameters.Filter = filter;
+                    requestConfiguration.QueryParameters.Orderby = new[] { "lastMessagePreview/createdDateTime desc" };
+                    requestConfiguration.QueryParameters.Top = top;
+                }, cancellationToken));
 
             var maxIterations = 4;
             while (chats?.Value != null && maxIterations > 0)
@@ -39,9 +40,12 @@ namespace Apps.MicrosoftTeams.DynamicHandlers
 
                 if (!string.IsNullOrEmpty(chats.OdataNextLink))
                 {
-                    chats = await client.Me.Chats
-                        .WithUrl(chats.OdataNextLink)
-                        .GetAsync(cancellationToken: cancellationToken);
+                    chats = await client.ExecuteWithErrorHandlingAsync(() => 
+                        client.Me
+                            .Chats
+                            .WithUrl(chats.OdataNextLink)
+                            .GetAsync(cancellationToken: cancellationToken));
+                    
                     maxIterations--;
                 }
                 else

@@ -30,20 +30,22 @@ internal sealed record ChannelMessageResource(string TeamId, string ChannelId, s
 
 internal static class ChannelMessageReader
 {
-    public static async Task<Microsoft.Graph.Models.ChatMessage> GetAsync(MSTeamsClient client, ChannelMessageResource resource)
+    public static async Task<Microsoft.Graph.Models.ChatMessage?> GetAsync(MSTeamsClient client, ChannelMessageResource resource)
     {
         if (!string.IsNullOrEmpty(resource.ReplyId))
         {
-            return await client.Teams[resource.TeamId]
-                .Channels[resource.ChannelId]
-                .Messages[resource.MessageId]
-                .Replies[resource.ReplyId]
-                .GetAsync();
+            return await client.ExecuteWithErrorHandlingAsync(() => 
+                client.Teams[resource.TeamId]
+                    .Channels[resource.ChannelId]
+                    .Messages[resource.MessageId]
+                    .Replies[resource.ReplyId]
+                    .GetAsync());
         }
 
-        return await client.Teams[resource.TeamId]
-            .Channels[resource.ChannelId]
-            .Messages[resource.MessageId]
-            .GetAsync();
+        return await client.ExecuteWithErrorHandlingAsync(() =>
+            client.Teams[resource.TeamId]
+                .Channels[resource.ChannelId]
+                .Messages[resource.MessageId]
+                .GetAsync());
     }
 }

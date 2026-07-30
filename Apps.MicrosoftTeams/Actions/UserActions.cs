@@ -5,8 +5,6 @@ using Apps.MicrosoftTeams.Dtos;
 using Apps.MicrosoftTeams.Models.Identifiers;
 using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Microsoft.Graph.Models.ODataErrors;
-using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams.Actions;
 
@@ -20,19 +18,8 @@ public class UserActions(InvocationContext invocationContext) : BaseInvocable(in
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
 
-        try
-        {
-            var myInfo = await client.Me.GetAsync();
-            return new UserDto(myInfo);
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        var myInfo = await client.ExecuteWithErrorHandlingAsync(() => client.Me.GetAsync());
+        return new UserDto(myInfo);
     }
 
     [Action("List all users", Description = "List all users")]
@@ -40,19 +27,8 @@ public class UserActions(InvocationContext invocationContext) : BaseInvocable(in
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
 
-        try
-        {
-            var users = await client.Users.GetAsync();
-            return new ListUsersResponse { Users = users.Value.Select(u => new UserDto(u)) };
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        var users = await client.ExecuteWithErrorHandlingAsync(() => client.Users.GetAsync());
+        return new ListUsersResponse { Users = users.Value.Select(u => new UserDto(u)) };
     }
 
     [Action("Get user", Description = "Get user by ID")]
@@ -60,19 +36,8 @@ public class UserActions(InvocationContext invocationContext) : BaseInvocable(in
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
 
-        try
-        {
-            var user = await client.Users[userIdentifier.UserId].GetAsync();
-            return new UserDto(user);
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+        var user = await client.ExecuteWithErrorHandlingAsync(() => client.Users[userIdentifier.UserId].GetAsync());
+        return new UserDto(user);
     }
 
     [Action("Get chat members", Description = "Get chat members")]
@@ -80,22 +45,11 @@ public class UserActions(InvocationContext invocationContext) : BaseInvocable(in
     {
         var client = new MSTeamsClient(_authenticationCredentialsProviders);
 
-        try
+        var members = await client.ExecuteWithErrorHandlingAsync(() => client.Me.Chats[chatIdentifier.ChatId].Members.GetAsync());
+        return new GetChatUsersResponse
         {
-            var members = await client.Me.Chats[chatIdentifier.ChatId].Members.GetAsync();
-            return new GetChatUsersResponse
-            {
-                Members = members.Value.Select(m => new ChatMemberDto(m))
-            };
-        }
-        catch (ODataError error)
-        {
-            throw new PluginApplicationException(error.Error.Message);
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"An error occurred : {ex.Message}");
-        }
+            Members = members.Value.Select(m => new ChatMemberDto(m))
+        };
     }
 
     [Action("Debug", Description = "Debug")]
