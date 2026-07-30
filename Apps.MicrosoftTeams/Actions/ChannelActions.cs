@@ -5,7 +5,6 @@ using Apps.MicrosoftTeams.Models.Requests;
 using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -18,19 +17,17 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 namespace Apps.MicrosoftTeams.Actions;
 
 [ActionList("Channels")]
-public class ChannelActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseInvocable(invocationContext)
+public class ChannelActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    : MsTeamsInvocable(invocationContext)
 {
-    private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
-
     [Action("Get channel message", Description = "Get channel message")]
     public async Task<ChannelMessageDto> GetChannelMessage([ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] MessageIdentifier messageIdentifier)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
 
-        var message = await client.ExecuteWithErrorHandlingAsync(() => 
-            client
+        var message = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client
                 .Teams[teamChannel.TeamId]
                 .Channels[teamChannel.ChannelId]
                 .Messages[messageIdentifier.MessageId]
@@ -44,11 +41,10 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         [ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] MessageIdentifier messageIdentifier)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
 
-        var message = await client.ExecuteWithErrorHandlingAsync(() => 
-            client
+        var message = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client
                 .Teams[teamChannel.TeamId]
                 .Channels[teamChannel.ChannelId]
                 .Messages[messageIdentifier.MessageId]
@@ -64,10 +60,10 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
             var sharingUrl = attachment.ContentUrl;
             var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
             var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/', '_').Replace('+', '-');
-            var fileData = await client.ExecuteWithErrorHandlingAsync(async () => await client.Shares[encodedUrl].DriveItem.GetAsync());
+            var fileData = await Client.ExecuteWithErrorHandlingAsync(async () => await Client.Shares[encodedUrl].DriveItem.GetAsync());
 
-            var fileContentStream = await client.ExecuteWithErrorHandlingAsync(async () => 
-                await client.Shares[encodedUrl].DriveItem.Content.GetAsync());
+            var fileContentStream = await Client.ExecuteWithErrorHandlingAsync(async () => 
+                await Client.Shares[encodedUrl].DriveItem.Content.GetAsync());
             
             var memoryStream = new MemoryStream();
             await fileContentStream.CopyToAsync(memoryStream);
@@ -88,12 +84,11 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         [ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] SendMessageRequest input)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
         var requestBody = await CreateChannelMessage(input, teamChannel);
 
-        var sentMessage = await client.ExecuteWithErrorHandlingAsync(() => 
-            client
+        var sentMessage = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client
                 .Teams[teamChannel.TeamId]
                 .Channels[teamChannel.ChannelId]
                 .Messages
@@ -108,12 +103,11 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         [ActionParameter] MessageIdentifier messageIdentifier,
         [ActionParameter] SendMessageRequest input)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
         var requestBody = await CreateChannelMessage(input, teamChannel);
 
-        var sentReply = await client.ExecuteWithErrorHandlingAsync(() => 
-            client
+        var sentReply = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client
                 .Teams[teamChannel.TeamId]
                 .Channels[teamChannel.ChannelId]
                 .Messages[messageIdentifier.MessageId]
@@ -169,10 +163,8 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
     {
         const int chunkSize = 3932160;
 
-        var client = new MSTeamsClient(InvocationContext.AuthenticationCredentialsProviders);
-
-        var channelFolder = await client.ExecuteWithErrorHandlingAsync(() => 
-            client
+        var channelFolder = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client
                 .Teams[teamChannel.TeamId]
                 .Channels[teamChannel.ChannelId]
                 .FilesFolder
@@ -203,8 +195,8 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
             }
         };
 
-        var uploadSession = await client.ExecuteWithErrorHandlingAsync(() => 
-            client
+        var uploadSession = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client
                 .Drives[channelFolder.ParentReference.DriveId]
                 .Items[channelFolder.Id]
                 .ItemWithPath(file.Name)
@@ -212,7 +204,7 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
                 .PostAsync(uploadSessionRequestBody));
 
         var fileUploadTask =
-            new LargeFileUploadTask<DriveItem>(uploadSession, fileMemoryStream, chunkSize, client.RequestAdapter);
+            new LargeFileUploadTask<DriveItem>(uploadSession, fileMemoryStream, chunkSize, Client.RequestAdapter);
 
         var uploadResult = await fileUploadTask.UploadAsync();
 

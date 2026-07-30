@@ -4,7 +4,6 @@ using Apps.MicrosoftTeams.Models.Requests;
 using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -15,19 +14,17 @@ using Microsoft.Graph.Models;
 namespace Apps.MicrosoftTeams.Actions;
 
 [ActionList("Chats")]
-public class ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : BaseInvocable(invocationContext)
+public class ChatActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    : MsTeamsInvocable(invocationContext)
 {
-    private readonly IEnumerable<AuthenticationCredentialsProvider> _authenticationCredentialsProviders = invocationContext.AuthenticationCredentialsProviders;
-
     [Action("List chats", Description = "List chats")]
     public async Task<ListChatsResponse> ListChats()
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
         var top = 50;
         var allChats = new List<Chat>();
         
-        var chats = await client.ExecuteWithErrorHandlingAsync(() => 
-            client.Me.Chats.GetAsync(requestConfiguration => { requestConfiguration.QueryParameters.Top = top; }));
+        var chats = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client.Me.Chats.GetAsync(requestConfiguration => { requestConfiguration.QueryParameters.Top = top; }));
         
         var maxIterations = 10;
         while (chats?.Value != null && maxIterations > 0)
@@ -41,7 +38,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
 
             if (!string.IsNullOrEmpty(chats.OdataNextLink))
             {
-                chats = await client.ExecuteWithErrorHandlingAsync(() => client.Me.Chats.WithUrl(chats.OdataNextLink).GetAsync());
+                chats = await Client.ExecuteWithErrorHandlingAsync(() => Client.Me.Chats.WithUrl(chats.OdataNextLink).GetAsync());
                 maxIterations--;
             }
             else
@@ -60,10 +57,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<ChatMessageDto> GetChatMessage([ActionParameter] ChatIdentifier chatIdentifier, 
         [ActionParameter] MessageIdentifier messageIdentifier)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-
-        var message = await client.ExecuteWithErrorHandlingAsync(() => 
-            client.Me
+        var message = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client.Me
                 .Chats[chatIdentifier.ChatId]
                 .Messages[messageIdentifier.MessageId]
                 .GetAsync());
@@ -76,10 +71,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         [ActionParameter] ChatIdentifier chatIdentifier, 
         [ActionParameter] MessageIdentifier messageIdentifier)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-
-        var message = await client.ExecuteWithErrorHandlingAsync(() => 
-            client.Me
+        var message = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client.Me
                 .Chats[chatIdentifier.ChatId]
                 .Messages[messageIdentifier.MessageId]
                 .GetAsync());
@@ -92,10 +85,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             var sharingUrl = attachment.ContentUrl;
             var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
             var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/','_').Replace('+','-');
-            var fileData = await client.ExecuteWithErrorHandlingAsync(() => client.Shares[encodedUrl].DriveItem.GetAsync());
+            var fileData = await Client.ExecuteWithErrorHandlingAsync(() => Client.Shares[encodedUrl].DriveItem.GetAsync());
 
-            var fileContentStream = await client.ExecuteWithErrorHandlingAsync(() =>
-                client.Shares[encodedUrl].DriveItem.Content.GetAsync());
+            var fileContentStream = await Client.ExecuteWithErrorHandlingAsync(() =>
+                Client.Shares[encodedUrl].DriveItem.Content.GetAsync());
             
             var memoryStream = new MemoryStream();
             await fileContentStream.CopyToAsync(memoryStream);
@@ -112,9 +105,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<GetLastMessages> GetLastMessages([ActionParameter] ChatIdentifier chatIdentifier,
         [ActionParameter] [Display("Messages amount")] int messagesAmount)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-        
-        var messages = await client.ExecuteWithErrorHandlingAsync(() => client.Me.Chats[chatIdentifier.ChatId].Messages.GetAsync());
+        var messages = await Client.ExecuteWithErrorHandlingAsync(() => Client.Me.Chats[chatIdentifier.ChatId].Messages.GetAsync());
         return new GetLastMessages
         {
             Messages = messages.Value.Take(messagesAmount).Select(m => new ChatMessageDto(m))
@@ -125,11 +116,10 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<ChatMessageDto> SendMessageToChat([ActionParameter] ChatIdentifier chatIdentifier,
         [ActionParameter] SendMessageRequest input)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-        var requestBody = await CreateChatMessage(client, input);
+        var requestBody = await CreateChatMessage(Client, input);
 
-        var sentMessage = await client.ExecuteWithErrorHandlingAsync(() => 
-            client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(requestBody));
+        var sentMessage = await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client.Me.Chats[chatIdentifier.ChatId].Messages.PostAsync(requestBody));
         
         return new ChatMessageDto(sentMessage);
     }
@@ -138,17 +128,15 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
     public async Task DeleteMessageFromChat([ActionParameter] ChatIdentifier chatIdentifier, 
         [ActionParameter] MessageIdentifier messageIdentifier)
     {
-        var client = new MSTeamsClient(_authenticationCredentialsProviders);
-
-        await client.ExecuteWithErrorHandlingAsync(() => 
-            client.Me
+        await Client.ExecuteWithErrorHandlingAsync(() => 
+            Client.Me
                 .Chats[chatIdentifier.ChatId]
                 .Messages[messageIdentifier.MessageId]
                 .SoftDelete
                 .PostAsync());
     }
         
-    private async Task<ChatMessage> CreateChatMessage(MSTeamsClient client, SendMessageRequest input)
+    private async Task<ChatMessage> CreateChatMessage(MSTeamsClient Client, SendMessageRequest input)
     {
         var requestBody = new ChatMessage
         {
@@ -163,12 +151,12 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         if (input.AttachmentFile is null && input.OneDriveAttachmentFileId is null) 
             return requestBody;
         
-        var drive = await client.ExecuteWithErrorHandlingAsync(() => client.Me.Drive.GetAsync());
+        var drive = await Client.ExecuteWithErrorHandlingAsync(() => Client.Me.Drive.GetAsync());
 
         if (input.OneDriveAttachmentFileId is not null)
         {
-            var oneDriveAttachmentFile = await client.ExecuteWithErrorHandlingAsync(() => 
-                client
+            var oneDriveAttachmentFile = await Client.ExecuteWithErrorHandlingAsync(() => 
+                Client
                     .Drives[drive.Id]
                     .Items[input.OneDriveAttachmentFileId]
                     .GetAsync());
@@ -210,15 +198,14 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
         const string teamsFilesFolderName = "Microsoft Teams Chat Files";
         const int chunkSize = 3932160; 
         
-        var client = new MSTeamsClient(InvocationContext.AuthenticationCredentialsProviders);
-        var drive = await client.Me.Drive.GetAsync();
-        var root = await client.Drives[drive.Id].Root.GetAsync();
-        var folders = await client.Drives[drive.Id].Items[root.Id].Children.GetAsync();
+        var drive = await Client.Me.Drive.GetAsync();
+        var root = await Client.Drives[drive.Id].Root.GetAsync();
+        var folders = await Client.Drives[drive.Id].Items[root.Id].Children.GetAsync();
         var teamsFilesFolder = folders.Value.FirstOrDefault(folder =>
             folder.Folder is not null && folder.Name == teamsFilesFolderName);
 
         if (teamsFilesFolder is null)
-            teamsFilesFolder = await client.Drives[drive.Id].Items[root.Id].Children.PostAsync(new DriveItem
+            teamsFilesFolder = await Client.Drives[drive.Id].Items[root.Id].Children.PostAsync(new DriveItem
             {
                 Name = teamsFilesFolderName,
                 Folder = new Folder()
@@ -240,11 +227,11 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             }
         };
             
-        var uploadSession = await client.Drives[drive.Id].Items[teamsFilesFolder.Id].ItemWithPath(file.Name)
+        var uploadSession = await Client.Drives[drive.Id].Items[teamsFilesFolder.Id].ItemWithPath(file.Name)
             .CreateUploadSession.PostAsync(uploadSessionRequestBody);
 
         var fileUploadTask =
-            new LargeFileUploadTask<DriveItem>(uploadSession, fileMemoryStream, chunkSize, client.RequestAdapter);
+            new LargeFileUploadTask<DriveItem>(uploadSession, fileMemoryStream, chunkSize, Client.RequestAdapter);
         var uploadResult = await fileUploadTask.UploadAsync();
         return uploadResult.ItemResponse;
     }
