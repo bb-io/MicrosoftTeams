@@ -77,7 +77,7 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
                 .Messages[messageIdentifier.MessageId]
                 .GetAsync());
         
-        var fileAttachments = message.Attachments.Where(a => a.ContentType == "reference");
+        var fileAttachments = message?.Attachments?.Where(a => a.ContentType == "reference") ?? [];
         var resultFiles = new List<FileReference>();
 
         foreach (var attachment in fileAttachments)
