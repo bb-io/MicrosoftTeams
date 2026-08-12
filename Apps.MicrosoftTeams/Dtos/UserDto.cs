@@ -1,5 +1,6 @@
 ﻿using Blackbird.Applications.Sdk.Common;
 using Microsoft.Graph.Models;
+using System.Net;
 
 namespace Apps.MicrosoftTeams.Dtos;
 
@@ -22,6 +23,12 @@ public class UserDto
 
     [Display("User ID")]
     public string Id { get; set; }
+
+    [Display("Mention user")]
+    public string MentionUser => string.IsNullOrWhiteSpace(Id)
+        ? string.Empty
+        : $"<at user_id=\"{WebUtility.HtmlEncode(Id)}\">{WebUtility.HtmlEncode(DisplayName)}</at>";
+
     public List<string> BusinessPhones { get; set; }
     public string DisplayName { get; set; }
     public string GivenName { get; set; }
