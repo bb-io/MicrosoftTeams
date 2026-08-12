@@ -39,7 +39,7 @@ public class ChatMessageMentionBuilderTests
         ChatMessageMentionBuilder.Apply(message, "Please review this task.", users);
 
         Assert.AreEqual(
-            "Please review this task. <at id=\"0\">John Doe</at> <at id=\"1\">Anna Smith</at>",
+            "Please review this task.<br><br><at id=\"0\">John Doe</at> <at id=\"1\">Anna Smith</at>",
             message.Body?.Content);
         Assert.IsNotNull(message.Mentions);
         Assert.AreEqual(2, message.Mentions.Count);
@@ -63,7 +63,7 @@ public class ChatMessageMentionBuilderTests
             users);
 
         Assert.AreEqual(
-            "Hello <at id=\"0\">John Doe</at>, please review. <at id=\"1\">Anna Smith</at>",
+            "Hello <at id=\"0\">John Doe</at>, please review.<br><br><at id=\"1\">Anna Smith</at>",
             message.Body?.Content);
         Assert.IsNotNull(message.Mentions);
         Assert.AreEqual(2, message.Mentions.Count);
@@ -87,7 +87,7 @@ public class ChatMessageMentionBuilderTests
             users);
 
         Assert.AreEqual(
-            "Hello <at id=\"0\">John Doe</at> <at id=\"1\">Anna Smith</at>",
+            "Hello <at id=\"0\">John Doe</at><br><br><at id=\"1\">Anna Smith</at>",
             message.Body?.Content);
         Assert.IsNotNull(message.Mentions);
         Assert.AreEqual(2, message.Mentions.Count);

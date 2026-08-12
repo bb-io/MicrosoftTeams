@@ -123,7 +123,7 @@ and _No_ if not.
 
 > You can mention users in messages in two ways:
 >
-> 1. Use **Mentioned users** in a send or reply action. Selected users will be appended to the end of the message.
+> 1. Use **Mentioned users** in a send or reply action. Selected users will be appended on a separate line below the message.
 > 2. Use the **Mention user** output returned by **Get my user information**, **List all users**, or **Get user**, and insert that token anywhere inside the message text.
 >
 > Example inline mention token: `<at user_id="user-id">User Name</at>`.

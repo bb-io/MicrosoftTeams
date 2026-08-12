@@ -9,7 +9,7 @@ public class SendMessageRequest
 {
     public string Message { get; set; }
 
-    [Display("Mentioned users", Description = "Selected users will be mentioned at the end of the message")]
+    [Display("Mentioned users", Description = "Selected users will be mentioned below the message")]
     [DataSource(typeof(UserHandler))]
     public IEnumerable<string>? MentionedUserIds { get; set; }
     

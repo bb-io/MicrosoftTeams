@@ -85,13 +85,17 @@ public static partial class ChatMessageMentionBuilder
             .Where(user => !inlineUserIds.Contains(user.Id!))
             .ToArray();
 
-        foreach (var user in usersToAppend)
+        if (content.Length > 0 && usersToAppend.Length > 0)
+            content += "<br><br>";
+
+        for (var i = 0; i < usersToAppend.Length; i++)
         {
+            var user = usersToAppend[i];
             if (string.IsNullOrWhiteSpace(user.DisplayName))
                 throw new PluginApplicationException(
                     $"Could not resolve the display name for mentioned user '{user.Id}'.");
 
-            if (content.Length > 0 && !char.IsWhiteSpace(content[^1]))
+            if (i > 0)
                 content += " ";
 
             var mentionId = mentions.Count;
