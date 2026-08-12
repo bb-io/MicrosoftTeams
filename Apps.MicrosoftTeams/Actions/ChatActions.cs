@@ -2,6 +2,7 @@
 using Apps.MicrosoftTeams.Models.Identifiers;
 using Apps.MicrosoftTeams.Models.Requests;
 using Apps.MicrosoftTeams.Models.Responses;
+using Apps.MicrosoftTeams.Models.Utility;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Files;
@@ -147,6 +148,8 @@ public class ChatActions(InvocationContext invocationContext, IFileManagementCli
             },
             Attachments = new List<ChatMessageAttachment>()
         };
+
+        await ChatMessageMentionBuilder.ApplyAsync(Client, requestBody, input);
 
         if (input.AttachmentFile is null && input.OneDriveAttachmentFileId is null) 
             return requestBody;

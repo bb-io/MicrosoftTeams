@@ -111,15 +111,24 @@ and _No_ if not.
 - **Get chat message** retrieves a single message or a message reply in a chat.
 - **Download files attached to chat message**.
 - **Get the most recent chat messages**.
-- **Send message to chat** sends a new message to the specified chat. Optionally, you can attach file from OneDrive and/or file obtained as a result of the previous action.
+- **Send message to chat** sends a new message to the specified chat. Optionally, you can mention users and attach a file from OneDrive and/or a file obtained as a result of the previous action.
 - **Delete message from chat**.
 
 ### Channel
 
 - **Get channel message** retrieves a single message or a message reply in a channel.
 - **Download files attached to channel message**.
-- **Send message to channel** sends a new message to the specified channel. Optionally, you can attach file from OneDrive and/or file obtained as a result of the previous action.
-- **Reply to message in channel** sends a reply to a message to a specified channel. Optionally, you can attach file from OneDrive and/or file obtained as a result of the previous action.
+- **Send message to channel** sends a new message to the specified channel. Optionally, you can mention users and attach a file obtained as a result of the previous action.
+- **Reply to message in channel** sends a reply to a message to a specified channel. Optionally, you can mention users and attach a file obtained as a result of the previous action.
+
+> You can mention users in messages in two ways:
+>
+> 1. Use **Mentioned users** in a send or reply action. Selected users will be appended to the end of the message.
+> 2. Use the **Mention user** output returned by **Get my user information**, **List all users**, or **Get user**, and insert that token anywhere inside the message text.
+>
+> Example inline mention token: `<at user_id="user-id">User Name</at>`.
+>
+> You can also place `<at id="0">User Name</at>` in the message and select the corresponding user as the first value in **Mentioned users**. IDs are zero-based and refer to the order of selected users.
 
 ### Users
 
