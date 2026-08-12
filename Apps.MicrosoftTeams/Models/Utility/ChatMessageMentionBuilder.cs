@@ -106,7 +106,9 @@ public static partial class ChatMessageMentionBuilder
         chatMessage.Body ??= new ItemBody { ContentType = BodyType.Html };
         chatMessage.Body.ContentType = BodyType.Html;
         chatMessage.Body.Content = content;
-        chatMessage.Mentions = mentions.Count > 0 ? mentions : null;
+
+        if (mentions.Count > 0)
+            chatMessage.Mentions = mentions;
     }
 
     private static ChatMessageMention CreateMention(int mentionId, string userId, string displayName)
