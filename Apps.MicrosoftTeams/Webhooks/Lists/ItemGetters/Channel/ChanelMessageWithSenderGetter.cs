@@ -24,15 +24,18 @@ public class ChannelMessageWithSenderGetter : ItemGetter<ChannelMessageDto>
         var resource = ChannelMessageResource.Parse(eventPayload);
         var message = await ChannelMessageReader.GetAsync(client, resource);
 
-        if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
+        if (message is null)
+            return null;
+
+        if (_sender.UserId is not null && _sender.UserId != message.From?.User?.Id)
         {
             return null;
         }
 
-        if (!string.IsNullOrWhiteSpace(_messageFilter.Contains) && !message.Body.Content.Contains(_messageFilter.Contains, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(_messageFilter.Contains)
+            && message.Body?.Content?.Contains(_messageFilter.Contains, StringComparison.OrdinalIgnoreCase) != true)
             return null;
 
-
-        return new ChannelMessageDto(message);
+        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId);
     }
 }

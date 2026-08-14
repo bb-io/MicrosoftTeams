@@ -30,12 +30,16 @@ public class ChatMessageWithSenderGetter : ItemGetter<ChatMessageDto>
         var message = await client.ExecuteWithErrorHandlingAsync(() =>
             client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync());
         
-        if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
+        if (message is null)
             return null;
 
-        if (!string.IsNullOrWhiteSpace(_messageFilter.Contains) && !message.Body.Content.Contains(_messageFilter.Contains,StringComparison.OrdinalIgnoreCase))
+        if (_sender.UserId is not null && _sender.UserId != message.From?.User?.Id)
             return null;
-        
+
+        if (!string.IsNullOrWhiteSpace(_messageFilter.Contains)
+            && message.Body?.Content?.Contains(_messageFilter.Contains, StringComparison.OrdinalIgnoreCase) != true)
+            return null;
+
 
         return new ChatMessageDto(message);
     }

@@ -7,10 +7,13 @@ public class ChatMessageDto
 {
     public ChatMessageDto(ChatMessage message)
     {
-        Id = message.Id;
-        Content = message.Body.Content;
-        From = message.From.User.DisplayName;
-        ChatId = message.ChatId;
+        Id = message.Id ?? string.Empty;
+        Content = message.Body?.Content ?? string.Empty;
+        From = message.From?.User?.DisplayName
+               ?? message.From?.Application?.DisplayName
+               ?? message.From?.Device?.DisplayName
+               ?? string.Empty;
+        ChatId = message.ChatId ?? string.Empty;
     }
         
     [Display("Message ID")]

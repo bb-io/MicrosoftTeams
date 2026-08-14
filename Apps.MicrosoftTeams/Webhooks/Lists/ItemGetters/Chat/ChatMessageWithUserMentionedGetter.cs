@@ -29,9 +29,12 @@ public class ChatMessageWithUserMentionedGetter : ItemGetter<ChatMessageDto>
         var message = await client.ExecuteWithErrorHandlingAsync(() =>
             client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync());
         
-        if (!message.Mentions.Any(user => user.Mentioned.User.Id == _user.UserId))
+        if (message is null)
             return null;
-        
+
+        if (message.Mentions?.Any(mention => mention?.Mentioned?.User?.Id == _user.UserId) != true)
+            return null;
+
         return new ChatMessageDto(message);
     }
 }

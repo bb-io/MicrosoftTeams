@@ -22,12 +22,15 @@ public class ChannelMessageWithAttachmentsGetter : ItemGetter<ChannelMessageDto>
         var resource = ChannelMessageResource.Parse(eventPayload);
         var message = await ChannelMessageReader.GetAsync(client, resource);
 
+        if (message is null)
+            return null;
+
         var hasRefAttachments = message.Attachments?.Any(a => a?.ContentType == "reference") == true;
         if (!hasRefAttachments) return null;
 
         if (_sender.UserId is not null && message.From?.User?.Id != _sender.UserId)
             return null;
 
-        return new ChannelMessageDto(message);
+        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId);
     }
 }

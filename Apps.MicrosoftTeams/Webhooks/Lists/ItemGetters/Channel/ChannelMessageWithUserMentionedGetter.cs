@@ -22,9 +22,12 @@ public class ChannelMessageWithUserMentionedGetter : ItemGetter<ChannelMessageDt
         var resource = ChannelMessageResource.Parse(eventPayload);
         var message = await ChannelMessageReader.GetAsync(client, resource);
 
-        if (!message.Mentions.Any(user => user.Mentioned.User.Id == _user.UserId))
+        if (message is null)
             return null;
-        
-        return new ChannelMessageDto(message);
+
+        if (message.Mentions?.Any(mention => mention?.Mentioned?.User?.Id == _user.UserId) != true)
+            return null;
+
+        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId);
     }
 }
