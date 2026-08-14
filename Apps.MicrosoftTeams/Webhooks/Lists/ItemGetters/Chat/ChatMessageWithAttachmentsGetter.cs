@@ -28,10 +28,13 @@ public class ChatMessageWithAttachmentsGetter : ItemGetter<ChatMessageDto>
         var message = await client.ExecuteWithErrorHandlingAsync(() => 
             client.Me.Chats[chatId].Messages[eventPayload.ResourceData.Id].GetAsync());
 
-        if (!message.Attachments.Any(a => a.ContentType == "reference"))
+        if (message is null)
             return null;
-        
-        if (_sender.UserId is not null && _sender.UserId != message.From.User.Id)
+
+        if (message.Attachments?.Any(a => a?.ContentType == "reference") != true)
+            return null;
+
+        if (_sender.UserId is not null && _sender.UserId != message.From?.User?.Id)
             return null;
 
         return new ChatMessageDto(message);
