@@ -1,4 +1,5 @@
 using Apps.MicrosoftTeams.Dtos;
+using Apps.MicrosoftTeams.Models.Utility;
 using Apps.MicrosoftTeams.Webhooks.Inputs;
 using Apps.MicrosoftTeams.Webhooks.Payload;
 using Blackbird.Applications.Sdk.Common.Authentication;
@@ -26,11 +27,13 @@ public class ChannelMessageWithAttachmentsGetter : ItemGetter<ChannelMessageDto>
             return null;
 
         var hasRefAttachments = message.Attachments?.Any(a => a?.ContentType == "reference") == true;
-        if (!hasRefAttachments) return null;
+        var hasInlineImages = HostedContentImageHelper.GetIds(message.Body?.Content).Count > 0;
+        if (!hasRefAttachments && !hasInlineImages) return null;
 
         if (_sender.UserId is not null && message.From?.User?.Id != _sender.UserId)
             return null;
 
-        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId);
+        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId,
+            resource.MessageId, resource.ReplyId);
     }
 }
