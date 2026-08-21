@@ -40,16 +40,34 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
     [Action("Download files attached to channel message", Description = "Download files attached to channel message")]
     public async Task<DownloadFilesAttachedToMessageResponse> DownloadFilesAttachedToMessage(
         [ActionParameter] ChannelIdentifier channelIdentifier,
-        [ActionParameter] MessageIdentifier messageIdentifier)
+        [ActionParameter] ChannelMessageIdentifier messageIdentifier)
     {
-        var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
+        var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId)
+            ?? throw new PluginApplicationException("Could not resolve the selected channel.");
+        var rootMessage = Client
+            .Teams[teamChannel.TeamId]
+            .Channels[teamChannel.ChannelId]
+            .Messages[messageIdentifier.MessageId];
 
-        var message = await Client.ExecuteWithErrorHandlingAsync(() => 
-            Client
-                .Teams[teamChannel.TeamId]
-                .Channels[teamChannel.ChannelId]
-                .Messages[messageIdentifier.MessageId]
-                .GetAsync());
+        ChatMessage? message;
+        Func<string, Task<Stream?>> getHostedContent;
+
+        if (!string.IsNullOrWhiteSpace(messageIdentifier.ReplyId))
+        {
+            var reply = rootMessage.Replies[messageIdentifier.ReplyId];
+            message = await Client.ExecuteWithErrorHandlingAsync(() => reply.GetAsync());
+            getHostedContent = hostedContentId => Client.ExecuteWithErrorHandlingAsync(() =>
+                reply.HostedContents[hostedContentId].Content.GetAsync());
+        }
+        else
+        {
+            message = await Client.ExecuteWithErrorHandlingAsync(() => rootMessage.GetAsync());
+            getHostedContent = hostedContentId => Client.ExecuteWithErrorHandlingAsync(() =>
+                rootMessage.HostedContents[hostedContentId].Content.GetAsync());
+        }
+
+        if (message is null)
+            throw new PluginApplicationException("Microsoft Graph did not return the requested channel message.");
         
         var fileAttachments = message.Attachments?
             .Where(a => a.ContentType == "reference")
@@ -59,18 +77,42 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         foreach (var attachment in fileAttachments)
         {
             var sharingUrl = attachment.ContentUrl;
+            if (string.IsNullOrWhiteSpace(sharingUrl))
+                throw new PluginApplicationException("The attached file does not contain a download URL.");
+
             var base64Value = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sharingUrl));
             var encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/', '_').Replace('+', '-');
             var fileData = await Client.ExecuteWithErrorHandlingAsync(async () => await Client.Shares[encodedUrl].DriveItem.GetAsync());
 
             var fileContentStream = await Client.ExecuteWithErrorHandlingAsync(async () => 
                 await Client.Shares[encodedUrl].DriveItem.Content.GetAsync());
+
+            if (fileContentStream is null || fileData?.File is null || string.IsNullOrWhiteSpace(fileData.Name))
+                throw new PluginApplicationException("Microsoft Graph did not return the attached file content or metadata.");
             
             var memoryStream = new MemoryStream();
             await fileContentStream.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
 
-            var file = await fileManagementClient.UploadAsync(memoryStream, fileData.File.MimeType, fileData.Name);
+            var mimeType = fileData.File.MimeType ?? "application/octet-stream";
+            var file = await fileManagementClient.UploadAsync(memoryStream, mimeType, fileData.Name);
+            resultFiles.Add(file);
+        }
+
+        var hostedContentIds = HostedContentImageHelper.GetIds(message.Body?.Content);
+        for (var index = 0; index < hostedContentIds.Count; index++)
+        {
+            var hostedContentStream = await getHostedContent(hostedContentIds[index]);
+            if (hostedContentStream is null)
+                throw new PluginApplicationException("Microsoft Graph did not return the inline image content.");
+
+            var memoryStream = new MemoryStream();
+            await hostedContentStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            var (contentType, extension) = HostedContentImageHelper.DetectImageType(memoryStream);
+            var fileName = $"inline-image-{index + 1}{extension}";
+            var file = await fileManagementClient.UploadAsync(memoryStream, contentType, fileName);
             resultFiles.Add(file);
         }
 

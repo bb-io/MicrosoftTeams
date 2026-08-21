@@ -36,6 +36,7 @@ public class ChannelMessageWithSenderGetter : ItemGetter<ChannelMessageDto>
             && message.Body?.Content?.Contains(_messageFilter.Contains, StringComparison.OrdinalIgnoreCase) != true)
             return null;
 
-        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId);
+        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId,
+            resource.MessageId, resource.ReplyId);
     }
 }

@@ -28,6 +28,7 @@ public class ChannelMessageWithUserMentionedGetter : ItemGetter<ChannelMessageDt
         if (message.Mentions?.Any(mention => mention?.Mentioned?.User?.Id == _user.UserId) != true)
             return null;
 
-        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId);
+        return new ChannelMessageDto(message, resource.TeamId, resource.ChannelId,
+            resource.MessageId, resource.ReplyId);
     }
 }
