@@ -4,11 +4,12 @@ using Microsoft.Kiota.Abstractions.Authentication;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Microsoft.Graph.Models.ODataErrors;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 
 namespace Apps.MicrosoftTeams;
 
 public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> creds)
-    : GraphServiceClient(GetAuthenticationProvider(creds))
+    : GraphServiceClient(CreateHttpClient(), GetAuthenticationProvider(creds))
 {
     public Task ValidateConnection(CancellationToken cancellationToken)
     {
@@ -70,6 +71,15 @@ public class MSTeamsClient(IEnumerable<AuthenticationCredentialsProvider> creds)
     }
     
     private static bool Has(string scopes, string scope) => scopes.Contains(scope, StringComparison.OrdinalIgnoreCase);
+
+    private static HttpClient CreateHttpClient()
+    {
+        var handlers = GraphClientFactory.CreateDefaultHandlers(new GraphClientOptions())
+            .Where(handler => handler is not RetryHandler)
+            .Prepend(new GraphRetryHandler());
+
+        return GraphClientFactory.Create(handlers);
+    }
     
     private static BaseBearerTokenAuthenticationProvider GetAuthenticationProvider(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
     {

@@ -18,7 +18,7 @@ public class ChannelTests : TestBase
 		// Arrange
 		var action = new ChannelActions(InvocationContext, FileManager);
         var channel = new ChannelIdentifier { TeamChannelId = "{\"TeamId\":\"33189cfd-6664-4e5e-84c6-545e02af51cd\",\"ChannelId\":\"19:60f2e072f7e745168db1b9bbdf4d3522@thread.tacv2\"}" };
-        var message = new MessageIdentifier { MessageId = "1761073408631" };
+        var message = new ChannelMessageIdentifier { MessageId = "1761073408631" };
 
         // Act
         var result = await action.DownloadFilesAttachedToMessage(channel, message);
