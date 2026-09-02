@@ -6,6 +6,7 @@ namespace Apps.MicrosoftTeams;
 
 internal sealed class GraphRetryHandler : DelegatingHandler
 {
+    // Graph mutations intentionally use at-least-once semantics, so retries are not restricted by HTTP method.
     internal const int MaxRetryAttempts = 3;
     internal static readonly TimeSpan BaseDelay = TimeSpan.FromMilliseconds(300);
     internal static readonly TimeSpan MaxDelay = TimeSpan.FromSeconds(2);
@@ -67,12 +68,15 @@ internal sealed class GraphRetryHandler : DelegatingHandler
     {
         var retryAfter = response?.Headers.RetryAfter;
         if (retryAfter?.Delta is { } delta)
-            return delta > TimeSpan.Zero ? delta : TimeSpan.Zero;
+            return ClampDelay(delta);
 
         if (retryAfter?.Date is not { } date)
             return null;
 
         var delay = date - DateTimeOffset.UtcNow;
-        return delay > TimeSpan.Zero ? delay : TimeSpan.Zero;
+        return ClampDelay(delay);
     }
+
+    private static TimeSpan ClampDelay(TimeSpan delay) =>
+        delay <= TimeSpan.Zero ? TimeSpan.Zero : delay < MaxDelay ? delay : MaxDelay;
 }
