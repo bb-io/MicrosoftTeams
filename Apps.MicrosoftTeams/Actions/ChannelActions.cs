@@ -12,7 +12,6 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Microsoft.Graph;
 using Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
 using Microsoft.Graph.Models;
-using Newtonsoft.Json;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams.Actions;
@@ -25,7 +24,7 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
     public async Task<ChannelMessageDto> GetChannelMessage([ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] MessageIdentifier messageIdentifier)
     {
-        var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
+        var teamChannel = channelIdentifier.Resolve();
 
         var message = await Client.ExecuteWithErrorHandlingAsync(() => 
             Client
@@ -42,8 +41,7 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         [ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] ChannelMessageIdentifier messageIdentifier)
     {
-        var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId)
-            ?? throw new PluginApplicationException("Could not resolve the selected channel.");
+        var teamChannel = channelIdentifier.Resolve();
         var rootMessage = Client
             .Teams[teamChannel.TeamId]
             .Channels[teamChannel.ChannelId]
@@ -127,7 +125,7 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         [ActionParameter] ChannelIdentifier channelIdentifier,
         [ActionParameter] SendMessageRequest input)
     {
-        var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
+        var teamChannel = channelIdentifier.Resolve();
         var requestBody = await CreateChannelMessage(input, teamChannel);
 
         var sentMessage = await Client.ExecuteWithErrorHandlingAsync(() => 
@@ -146,7 +144,7 @@ public class ChannelActions(InvocationContext invocationContext, IFileManagement
         [ActionParameter] MessageIdentifier messageIdentifier,
         [ActionParameter] SendMessageRequest input)
     {
-        var teamChannel = JsonConvert.DeserializeObject<TeamChannel>(channelIdentifier.TeamChannelId);
+        var teamChannel = channelIdentifier.Resolve();
         var requestBody = await CreateChannelMessage(input, teamChannel);
 
         var sentReply = await Client.ExecuteWithErrorHandlingAsync(() => 
