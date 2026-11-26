@@ -5,6 +5,7 @@ using Apps.MicrosoftTeams.Dtos;
 using Apps.MicrosoftTeams.Models.Identifiers;
 using Apps.MicrosoftTeams.Models.Responses;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.MicrosoftTeams.Actions;
 
@@ -30,6 +31,31 @@ public class UserActions(InvocationContext invocationContext) : MsTeamsInvocable
     {
         var user = await Client.ExecuteWithErrorHandlingAsync(() => Client.Users[userIdentifier.UserId].GetAsync());
         return new UserDto(user);
+    }
+
+    [Action("Find user by email", Description = "Find a user by email address")]
+    public async Task<UserDto> FindUserByEmail([ActionParameter] UserEmailIdentifier userEmailIdentifier)
+    {
+        var email = userEmailIdentifier.Email?.Trim();
+        if (string.IsNullOrWhiteSpace(email))
+            throw new PluginMisconfigurationException("Email must not be empty.");
+
+        var escapedEmail = email.Replace("'", "''");
+        var users = await Client.ExecuteWithErrorHandlingAsync(() => Client.Users.GetAsync(requestConfiguration =>
+        {
+            requestConfiguration.QueryParameters.Filter =
+                $"mail eq '{escapedEmail}' or userPrincipalName eq '{escapedEmail}'";
+            requestConfiguration.QueryParameters.Top = 2;
+        }));
+
+        var matches = users?.Value ?? [];
+        if (matches.Count == 0)
+            throw new PluginApplicationException($"No user was found with the email address '{email}'.");
+
+        if (matches.Count > 1)
+            throw new PluginApplicationException($"Multiple users were found with the email address '{email}'.");
+
+        return new UserDto(matches[0]);
     }
 
     [Action("Get chat members", Description = "Get chat members")]
