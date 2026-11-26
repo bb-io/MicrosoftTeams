@@ -124,7 +124,7 @@ and _No_ if not.
 > You can mention users in messages in two ways:
 >
 > 1. Use **Mentioned users** in a send or reply action. Selected users will be appended on a separate line below the message.
-> 2. Use the **Mention user** output returned by **Get my user information**, **List all users**, or **Get user**, and insert that token anywhere inside the message text.
+> 2. Use the **Mention user** output returned by **Get my user information**, **List all users**, **Get user**, or **Find user by email**, and insert that token anywhere inside the message text.
 >
 > Example inline mention token: `<at user_id="user-id">User Name</at>`.
 >
@@ -135,6 +135,7 @@ and _No_ if not.
 - **Get my user information** retrieves information about current account.
 - **List all users** returns a list of users in your organization.
 - **Get user**.
+- **Find user by email** returns a user whose email address or user principal name exactly matches the provided value. This action requires the `User.ReadBasic.All` permission when retrieving another user's information.
 - **Get chat members** lists all conversation members in a chat.
 
 ## Events
